@@ -103,6 +103,47 @@ typedef struct atg_element
 }
 atg_element;
 
+typedef enum
+{
+	ATG_EV_RAW, // raw SDL event
+	ATG_EV_CLICK, // click in a clickable area
+	/*ATG_EV_TRIGGER, // click on a button
+	ATG_EV_TOGGLE, // set/clear a togglebutton, checkbox, or other toggleable
+	ATG_EV_VALUE, // change of value (eg. of a spinner)*/
+}
+atg_event_type;
+
+typedef enum
+{
+	ATG_MB_LEFT=SDL_BUTTON_LEFT,
+	ATG_MB_RIGHT=SDL_BUTTON_RIGHT,
+	ATG_MB_MIDDLE=SDL_BUTTON_MIDDLE,
+	ATG_MB_SCROLLUP=SDL_BUTTON_WHEELUP,
+	ATG_MB_SCROLLDN=SDL_BUTTON_WHEELDOWN,
+}
+atg_mousebutton;
+
+typedef struct
+{
+	atg_pos pos;
+	atg_mousebutton button;
+}
+atg_ev_click;
+
+typedef struct
+{
+	atg_event_type type;
+	union {
+		SDL_Event *raw;
+		atg_ev_click *click;
+		/*atg_ev_trigger *trigger;
+		atg_ev_toggle *toggle;
+		atg_ev_value *value;
+		*/
+	} event;
+}
+atg_event;
+
 void atg_flip(atg_canvas *canvas);
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);

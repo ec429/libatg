@@ -74,7 +74,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 						x=xmax;
 					}
 					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=x, .y=y});
-					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=e->w, .h=e->h};
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=els[i]->w, .h=els[i]->h};
 					y+=els[i]->h;
 					if(x+els[i]->w>xmax)
 						xmax=x+els[i]->w;
@@ -148,6 +148,120 @@ void atg_flip(atg_canvas *canvas)
 	SDL_BlitSurface(box, NULL, canvas->surface, NULL);
 	SDL_FreeSurface(box);
 	SDL_Flip(canvas->surface);
+}
+
+typedef struct atg__event_list
+{
+	atg_event event;
+	struct atg__event_list *next;
+}
+atg__event_list;
+
+static atg__event_list *list=NULL, *last=NULL;
+
+int atg__push_event(atg_event event)
+{
+	if(last)
+	{
+		if(!(last->next=malloc(sizeof(atg__event_list))))
+			return(1);
+		*(last=last->next)=(atg__event_list){.event=event, .next=NULL};
+		return(0);
+	}
+	else if(list)
+	{
+		last=list;
+		while(last->next) last=last->next;
+		if(!(last->next=malloc(sizeof(atg__event_list))))
+			return(1);
+		*(last=last->next)=(atg__event_list){.event=event, .next=NULL};
+		return(0);
+	}
+	else
+	{
+		if(!(last=list=malloc(sizeof(atg__event_list))))
+			return(1);
+		*last=(atg__event_list){.event=event, .next=NULL};
+		return(0);
+	}
+}
+
+void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent button)
+{
+	if(!element) return;
+	if(
+		(button.x>=element->display.x)
+		&&(button.x<element->display.x+element->display.w)
+		&&(button.y>=element->display.y)
+		&&(button.y<element->display.y+element->display.h)
+	)
+	{
+		if(element->clickable)
+		{
+			atg_ev_click *click=malloc(sizeof(atg_ev_click));
+			if(click)
+			{
+				click->e=element;
+				click->pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
+				click->button=button.button;
+				if(atg__push_event((atg_event){.type=ATG_EV_CLICK, .event.click=click}))
+					free(click);
+			}
+		}
+		switch(element->type)
+		{
+			case ATG_BOX:;
+				atg_box *b=element->elem.box;
+				if(!b->elems) return;
+				for(unsigned int i=0;i<b->nelems;i++)
+					atg__match_click_recursive(b->elems[i], button);
+			break;
+			default:
+				// ignore
+			break;
+		}
+	}
+}
+
+void atg__match_click(atg_canvas *canvas, SDL_MouseButtonEvent button)
+{
+	if(!canvas) return;
+	if(!canvas->box) return;
+	atg_box *b=canvas->box;
+	if(!b->elems) return;
+	for(unsigned int i=0;i<b->nelems;i++)
+		atg__match_click_recursive(b->elems[i], button);
+}
+
+int atg_poll_event(atg_event *event, atg_canvas *canvas)
+{
+	if(!event) return(list?1:SDL_PollEvent(NULL));
+	if(!canvas) return(0);
+	SDL_Event s;
+	while(SDL_PollEvent(&s))
+	{
+		SDL_Event *sc=malloc(sizeof(SDL_Event));
+		if(sc)
+		{
+			*sc=s;
+			if(atg__push_event((atg_event){.type=ATG_EV_RAW, .event.raw=sc}))
+				free(sc);
+		}
+		if(s.type==SDL_MOUSEBUTTONDOWN)
+		{
+			atg__match_click(canvas, s.button);
+		}
+	}
+	if(list)
+	{
+		*event=list->event;
+		atg__event_list *next=list->next;
+		free(list);
+		if(last==list) last=NULL;
+		list=next;
+		return(1);
+	}
+	return(0);
 }
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour)

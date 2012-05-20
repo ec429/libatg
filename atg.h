@@ -89,7 +89,7 @@ atg_canvas;
 typedef struct atg_element
 {
 	unsigned int w, h; // width and height (0 for either means "shrink around contents")
-	SDL_Rect display;
+	SDL_Rect display; // co-ordinates within containing box
 	atg_type type;
 	union {
 		atg_box *box;
@@ -125,7 +125,8 @@ atg_mousebutton;
 
 typedef struct
 {
-	atg_pos pos;
+	atg_element *e; // the element which caught the click
+	atg_pos pos; // position of click relative to element top-left corner
 	atg_mousebutton button;
 }
 atg_ev_click;
@@ -145,6 +146,8 @@ typedef struct
 atg_event;
 
 void atg_flip(atg_canvas *canvas);
+
+int atg_poll_event(atg_event *event, atg_canvas *canvas);
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
 atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);

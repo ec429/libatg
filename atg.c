@@ -52,20 +52,6 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	if(e->type!=ATG_BOX) return(NULL);
 	atg_box *b=e->elem.box;
 	if(!b) return(NULL);
-	/*if(b->nelems==1) // special case for testing, until I write the box packing code
-	{
-		SDL_Surface *el=atg_render_element(b->elems[0]);
-		if(e->w||e->h)
-		{
-			SDL_Surface *rv=atg_resize_surface(el, e);
-			SDL_FreeSurface(el);
-			el=rv;
-		}
-		SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, el->w, el->h, el->format->BitsPerPixel, el->format->Rmask, el->format->Gmask, el->format->Bmask, el->format->Amask);
-		SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
-		SDL_BlitSurface(el, NULL, rv, NULL);
-		return(rv);
-	}*/
 	SDL_Surface **els=malloc(b->nelems*sizeof(SDL_Surface *)), *rv=NULL;
 	if(!els) return(NULL);
 	for(unsigned int i=0;i<b->nelems;i++)
@@ -80,6 +66,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 				unsigned int y=0, x=0, xmax=0;
 				for(unsigned int i=0;i<b->nelems;i++)
 				{
+					if(x>=e->w) break;
 					if(!els[i]) continue;
 					if(y+els[i]->h>e->h)
 					{
@@ -87,6 +74,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 						x=xmax;
 					}
 					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=x, .y=y});
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=e->w, .h=e->h};
 					y+=els[i]->h;
 					if(x+els[i]->w>xmax)
 						xmax=x+els[i]->w;

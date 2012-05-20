@@ -89,6 +89,7 @@ atg_canvas;
 typedef struct atg_element
 {
 	unsigned int w, h; // width and height (0 for either means "shrink around contents")
+	SDL_Rect display;
 	atg_type type;
 	union {
 		atg_box *box;

@@ -60,7 +60,18 @@ int main(void)
 									atg_label *l=click->e->elem.label;
 									if(l)
 									{
-										l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
+										switch(click->button)
+										{
+											case ATG_MB_LEFT:
+												l->colour=(atg_colour){0, 255, 0, ATG_ALPHA_OPAQUE};
+											break;
+											case ATG_MB_RIGHT:
+												l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
+											break;
+											default:
+												l->colour=(atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE};
+											break;
+										}
 									}
 								break;
 								default:

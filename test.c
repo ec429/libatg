@@ -11,7 +11,7 @@ int main(void)
 		return(1);
 	}
 	atg_box *mainbox=canvas->box;
-	atg_element *hello=atg_create_element_label(atg_const_string("Hello World!"), 12, (atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE});
+	atg_element *hello=atg_create_element_label("Hello World!", 12, (atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE});
 	if(hello)
 	{
 		if(atg_pack_element(mainbox, hello))

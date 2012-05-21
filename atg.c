@@ -115,7 +115,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 		if(!(monottf[l->fontsize-1]=TTF_OpenFont(monofont, l->fontsize)))
 			return(NULL);
 	}
-	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], l->text.d, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
+	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], l->text, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
 	if(e->w||e->h)
 	{
 		SDL_Surface *rv=atg_resize_surface(text, e);
@@ -290,19 +290,19 @@ atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour)
 	return(rv);
 }
 
-atg_label *atg_create_label(const atg_string text, unsigned int fontsize, atg_colour colour)
+atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_label *rv=malloc(sizeof(atg_label));
 	if(rv)
 	{
-		rv->text=atg_strdup(text);
+		rv->text=strdup(text);
 		rv->fontsize=fontsize;
 		rv->colour=colour;
 	}
 	return(rv);
 }
 
-atg_element *atg_create_element_label(const atg_string text, unsigned int fontsize, atg_colour colour)
+atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
@@ -318,107 +318,6 @@ atg_element *atg_create_element_label(const atg_string text, unsigned int fontsi
 	rv->clickable=false;
 	rv->userdata=NULL;
 	return(rv);
-}
-
-void append_char(atg_string *s, char c)
-{
-	if(s->l&&s->d)
-	{
-		s->d[s->i++]=c;
-	}
-	else
-	{
-		*s=init_string();
-		append_char(s, c);
-	}
-	char *nbuf=s->d;
-	if(s->i>=s->l)
-	{
-		if(s->i)
-			s->l=s->i*2;
-		else
-			s->l=80;
-		nbuf=(char *)realloc(s->d, s->l);
-	}
-	if(nbuf)
-	{
-		s->d=nbuf;
-		s->d[s->i]=0;
-	}
-	else
-	{
-		free(s->d);
-		*s=init_string();
-	}
-}
-
-void append_str(atg_string *s, const char *str)
-{
-	while(str && *str) // not the most tremendously efficient implementation, but conceptually simple at least
-	{
-		append_char(s, *str++);
-	}
-}
-
-void append_string(atg_string *s, const atg_string t)
-{
-	if(!s) return;
-	size_t i=s->i+t.i;
-	if(i>=s->l)
-	{
-		size_t l=i+1;
-		char *nbuf=(char *)realloc(s->d, l);
-		if(!nbuf) return;
-		s->l=l;
-		s->d=nbuf;
-	}
-	memcpy(s->d+s->i, t.d, t.i);
-	s->d[i]=0;
-	s->i=i;
-}
-
-atg_string init_string(void)
-{
-	atg_string s;
-	s.d=(char *)malloc(s.l=80);
-	if(s.d)
-		s.d[0]=0;
-	else
-		s.l=0;
-	s.i=0;
-	return(s);
-}
-
-atg_string null_string(void)
-{
-	return((atg_string){.d=NULL, .l=0, .i=0});
-}
-
-atg_string make_string(const char *str)
-{
-	atg_string s=init_string();
-	append_str(&s, str);
-	return(s);
-}
-
-atg_string atg_strdup(const atg_string string)
-{
-	atg_string rv;
-	if(!(rv.d=malloc(string.i+1)))
-	{
-		rv.l=rv.i=0;
-		return(rv);
-	}
-	rv.l=string.i+1;
-	rv.i=string.i;
-	memcpy(rv.d, string.d, string.i);
-	rv.d[rv.i]=0;
-	return(rv);
-}
-
-atg_string atg_const_string(char *str)
-{
-	return((atg_string){.d=str, .l=0, .i=strlen(str)});
 }
 
 int atg_pack_element(atg_box *box, atg_element *elem)
@@ -453,7 +352,7 @@ atg_label *atg_copy_label(const atg_label *l)
 	atg_label *rv=malloc(sizeof(atg_label));
 	if(!rv) return(NULL);
 	*rv=*l;
-	rv->text=atg_strdup(l->text);
+	rv->text=l->text?strdup(l->text):NULL;
 	return(rv);
 }
 
@@ -502,15 +401,9 @@ void atg_free_label(atg_label *label)
 {
 	if(label)
 	{
-		atg_free_string(label->text);
+		free(label->text);
 	}
 	free(label);
-}
-
-void atg_free_string(atg_string string)
-{
-	if(string.l)
-		free(string.d);
 }
 
 void atg_free_element(atg_element *element)

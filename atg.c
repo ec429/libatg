@@ -179,7 +179,20 @@ SDL_Surface *atg_render_button(const atg_element *e)
 	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
-	return(content);
+	if(!content) return(NULL);
+	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w+4, content->h+4, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
+	if(!rv)
+	{
+		SDL_FreeSurface(content);
+		return(NULL);
+	}
+	SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->content->bgcolour.r, b->content->bgcolour.g, b->content->bgcolour.b, b->content->bgcolour.a));
+	SDL_BlitSurface(content, NULL, rv, &(SDL_Rect){.x=2, .y=2});
+	SDL_FillRect(rv, &(SDL_Rect){.x=2, .y=1, .w=rv->w-4, .h=1}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
+	SDL_FillRect(rv, &(SDL_Rect){.x=2, .y=rv->h-2, .w=rv->w-4, .h=1}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
+	SDL_FillRect(rv, &(SDL_Rect){.x=1, .y=2, .w=1, .h=rv->h-4}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
+	SDL_FillRect(rv, &(SDL_Rect){.x=rv->w-2, .y=2, .w=1, .h=rv->h-4}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
+	return(rv);
 }
 
 SDL_Surface *atg_render_element(const atg_element *e)
@@ -275,6 +288,16 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 				for(unsigned int i=0;i<b->nelems;i++)
 					atg__match_click_recursive(b->elems[i], button);
 			break;
+			case ATG_BUTTON:;
+				atg_ev_trigger *trigger=malloc(sizeof(atg_ev_trigger));
+				if(trigger)
+				{
+					trigger->e=element;
+					trigger->button=button.button;
+					if(atg__push_event((atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger}))
+						free(trigger);
+				}
+			break;
 			default:
 				// ignore
 			break;
@@ -366,6 +389,7 @@ atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour
 	atg_button *rv=malloc(sizeof(atg_button));
 	if(rv)
 	{
+		rv->fgcolour=fgcolour;
 		rv->content=atg_create_box(ATG_BOX_PACK_HORIZONTAL, bgcolour);
 		if(rv->content)
 		{
@@ -427,7 +451,7 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->w=rv->h=0;
 	rv->type=ATG_BUTTON;
 	rv->elem.button=b;
-	rv->clickable=true;
+	rv->clickable=false; // because it generates ATG_EV_TRIGGER events instead
 	rv->userdata=NULL;
 	return(rv);
 }

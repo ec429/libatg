@@ -16,14 +16,14 @@ int main(void)
 	{
 		if(atg_pack_element(mainbox, hello))
 			perror("atg_pack_element");
-		for(unsigned int i=0;i<20;i++)
+		for(unsigned int i=0;i<21;i++)
 			if(atg_pack_element(mainbox, atg_copy_element(hello)))
 				perror("atg_pack_element");
 		hello->clickable=true;
 	}
 	else
 		fprintf(stderr, "atg_create_element_label failed\n");
-	atg_element *go=atg_create_element_button("Go!", (atg_colour){31, 31, 191, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+	atg_element *go=atg_create_element_button("Go!", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(go)
 	{
 		if(atg_pack_element(mainbox, go))
@@ -33,8 +33,38 @@ int main(void)
 		fprintf(stderr, "atg_create_element_button failed\n");
 	atg_event e;
 	int errupt=0;
+	bool going=false;
+	atg_element *stop=NULL;
+	unsigned int colcycle=0;
 	while(!errupt)
 	{
+		if(going&&mainbox&&mainbox->elems)
+		{
+			for(unsigned int i=0;i<mainbox->nelems;i++)
+			{
+				atg_element *e=mainbox->elems[i];
+				if(e&&(e->type==ATG_LABEL))
+				{
+					atg_label *l=e->elem.label;
+					if(l)
+					{
+						switch(colcycle)
+						{
+							case 0:
+								l->colour=(atg_colour){255, 255, 127, ATG_ALPHA_OPAQUE};
+							break;
+							case 1:
+								l->colour=(atg_colour){127, 255, 255, ATG_ALPHA_OPAQUE};
+							break;
+							case 2:
+								l->colour=(atg_colour){255, 127, 255, ATG_ALPHA_OPAQUE};
+							break;
+						}
+						colcycle=(colcycle+1)%3;
+					}
+				}
+			}
+		}
 		atg_flip(canvas);
 		while(atg_poll_event(&e, canvas))
 		{
@@ -91,6 +121,53 @@ int main(void)
 						{
 							fprintf(stderr, "click->e==NULL!\n");
 						}
+					}
+					else
+					{
+						fprintf(stderr, "click==NULL!\n");
+					}
+				break;
+				case ATG_EV_TRIGGER:;
+					atg_ev_trigger *trigger=e.event.trigger;
+					if(trigger)
+					{
+						if(trigger->e)
+						{
+							if(trigger->e==go)
+							{
+								if(!stop)
+								{
+									stop=atg_create_element_button("Stop!", (atg_colour){255, 63, 0, ATG_ALPHA_OPAQUE}, (atg_colour){0, 15, 47, ATG_ALPHA_OPAQUE});
+									if(stop)
+									{
+										if(atg_pack_element(mainbox, stop))
+											perror("atg_pack_element");
+										else
+											going=true;
+									}
+									else
+										fprintf(stderr, "atg_create_element_button failed\n");
+								}
+								else
+									going=true;
+							}
+							else if(trigger->e==stop)
+							{
+								going=false;
+							}
+							else
+							{
+								fprintf(stderr, "trigger->e not recognised!\n");
+							}
+						}
+						else
+						{
+							fprintf(stderr, "trigger->e==NULL!\n");
+						}
+					}
+					else
+					{
+						fprintf(stderr, "trigger==NULL!\n");
 					}
 				break;
 				default:

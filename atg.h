@@ -58,6 +58,7 @@ atg_image;
 
 typedef struct
 {
+	atg_colour fgcolour;
 	atg_box *content;
 }
 atg_button;

@@ -23,6 +23,14 @@ int main(void)
 	}
 	else
 		fprintf(stderr, "atg_create_element_label failed\n");
+	atg_element *go=atg_create_element_button("Go!", (atg_colour){31, 31, 191, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+	if(go)
+	{
+		if(atg_pack_element(mainbox, go))
+			perror("atg_pack_element");
+	}
+	else
+		fprintf(stderr, "atg_create_element_button failed\n");
 	atg_event e;
 	int errupt=0;
 	while(!errupt)

@@ -63,6 +63,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 			if(e->w)
 			{
 				rv=SDL_CreateRGBSurface(SDL_HWSURFACE, e->w, e->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+				SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
 				unsigned int y=0, x=0, xmax=0;
 				for(unsigned int i=0;i<b->nelems;i++)
 				{
@@ -92,7 +93,53 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	}
 	else
 	{
-		fprintf(stderr, "ABPH\n");
+		if(e->w)
+		{
+			if(e->h)
+			{
+				rv=SDL_CreateRGBSurface(SDL_HWSURFACE, e->w, e->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+				SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
+				unsigned int y=0, x=0, ymax=0;
+				for(unsigned int i=0;i<b->nelems;i++)
+				{
+					if(y>=e->h) break;
+					if(!els[i]) continue;
+					if(x+els[i]->w>e->w)
+					{
+						x=0;
+						y=ymax;
+					}
+					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=x, .y=y});
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=els[i]->w, .h=els[i]->h};
+					x+=els[i]->w;
+					if(y+els[i]->h>ymax)
+						ymax=y+els[i]->h;
+				}
+			}
+			else
+			{
+				fprintf(stderr, "ABPH+w, no h\n");
+			}
+		}
+		else
+		{
+			unsigned int x=0, y=0;
+			for(unsigned int i=0;i<b->nelems;i++)
+				if(els[i])
+				{
+					x+=els[i]->w;
+					if((unsigned int)els[i]->h>y) y=els[i]->h;
+				}
+			rv=SDL_CreateRGBSurface(SDL_HWSURFACE, x, y, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+			SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
+			x=0;
+			for(unsigned int i=0;i<b->nelems;i++)
+				if(els[i])
+				{
+					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=x, .y=0});
+					x+=els[i]->w;
+				}
+		}
 	}
 	for(unsigned int i=0;i<b->nelems;i++)
 		SDL_FreeSurface(els[i]);
@@ -125,6 +172,16 @@ SDL_Surface *atg_render_label(const atg_element *e)
 	return(text);
 }
 
+SDL_Surface *atg_render_button(const atg_element *e)
+{
+	if(!e) return(NULL);
+	if(e->type!=ATG_BUTTON) return(NULL);
+	atg_button *b=e->elem.button;
+	if(!b) return(NULL);
+	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
+	return(content);
+}
+
 SDL_Surface *atg_render_element(const atg_element *e)
 {
 	if(!e) return(NULL);
@@ -134,6 +191,8 @@ SDL_Surface *atg_render_element(const atg_element *e)
 			return(atg_render_box(e));
 		case ATG_LABEL:
 			return(atg_render_label(e));
+		case ATG_BUTTON:
+			return(atg_render_button(e));
 		default:
 			return(NULL);
 	}
@@ -302,6 +361,41 @@ atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour 
 	return(rv);
 }
 
+atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_button *rv=malloc(sizeof(atg_button));
+	if(rv)
+	{
+		rv->content=atg_create_box(ATG_BOX_PACK_HORIZONTAL, bgcolour);
+		if(rv->content)
+		{
+			atg_element *l=atg_create_element_label(label, 12, fgcolour);
+			if(l)
+			{
+				if(atg_pack_element(rv->content, l))
+				{
+					atg_free_element(l);
+					atg_free_box(rv->content);
+					free(rv);
+					return(NULL);
+				}
+			}
+			else
+			{
+				atg_free_box(rv->content);
+				free(rv);
+				return(NULL);
+			}
+		}
+		else
+		{
+			free(rv);
+			return(NULL);
+		}
+	}
+	return(rv);
+}
+
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
@@ -316,6 +410,24 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->type=ATG_LABEL;
 	rv->elem.label=l;
 	rv->clickable=false;
+	rv->userdata=NULL;
+	return(rv);
+}
+
+atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_button *b=atg_create_button(label, fgcolour, bgcolour);
+	if(!b)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type=ATG_BUTTON;
+	rv->elem.button=b;
+	rv->clickable=true;
 	rv->userdata=NULL;
 	return(rv);
 }
@@ -356,6 +468,16 @@ atg_label *atg_copy_label(const atg_label *l)
 	return(rv);
 }
 
+atg_button *atg_copy_button(const atg_button *b)
+{
+	if(!b) return(NULL);
+	atg_button *rv=malloc(sizeof(atg_button));
+	if(!rv) return(NULL);
+	*rv=*b;
+	rv->content=b->content?atg_copy_box(b->content):NULL;
+	return(rv);
+}
+
 atg_element *atg_copy_element(const atg_element *e)
 {
 	if(!e) return(NULL);
@@ -369,6 +491,9 @@ atg_element *atg_copy_element(const atg_element *e)
 			return(rv);
 		case ATG_LABEL:
 			rv->elem.label=atg_copy_label(e->elem.label);
+			return(rv);
+		case ATG_BUTTON:
+			rv->elem.button=atg_copy_button(e->elem.button);
 			return(rv);
 		default:
 			free(rv);
@@ -406,6 +531,15 @@ void atg_free_label(atg_label *label)
 	free(label);
 }
 
+void atg_free_button(atg_button *button)
+{
+	if(button)
+	{
+		atg_free_box(button->content);
+	}
+	free(button);
+}
+
 void atg_free_element(atg_element *element)
 {
 	if(element)
@@ -417,6 +551,9 @@ void atg_free_element(atg_element *element)
 			break;
 			case ATG_LABEL:
 				atg_free_label(element->elem.label);
+			break;
+			case ATG_BUTTON:
+				atg_free_button(element->elem.button);
 			break;
 			default:
 				/* Bad things */

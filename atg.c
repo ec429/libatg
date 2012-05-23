@@ -118,7 +118,25 @@ SDL_Surface *atg_render_box(const atg_element *e)
 			}
 			else
 			{
-				fprintf(stderr, "ABPH+w, no h\n");
+				unsigned int x=0, y=0, ymax=0;
+				for(unsigned int i=0;i<b->nelems;i++)
+				{
+					if(!els[i]) continue;
+					if(x+els[i]->w>e->w)
+					{
+						x=0;
+						y=ymax;
+					}
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=els[i]->w, .h=els[i]->h};
+					x+=els[i]->w;
+					if(y+els[i]->h>ymax)
+						ymax=y+els[i]->h;
+				}
+				rv=SDL_CreateRGBSurface(SDL_HWSURFACE, e->w, ymax, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+				SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
+				for(unsigned int i=0;i<b->nelems;i++)
+					if(els[i])
+						SDL_BlitSurface(els[i], NULL, rv, &b->elems[i]->display);
 			}
 		}
 		else
@@ -178,7 +196,7 @@ SDL_Surface *atg_render_button(const atg_element *e)
 	if(e->type!=ATG_BUTTON) return(NULL);
 	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
-	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
+	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w?e->w-4:0, .h=e->h?e->h-4:0, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w+4, content->h+4, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
 	if(!rv)
@@ -188,6 +206,7 @@ SDL_Surface *atg_render_button(const atg_element *e)
 	}
 	SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->content->bgcolour.r, b->content->bgcolour.g, b->content->bgcolour.b, b->content->bgcolour.a));
 	SDL_BlitSurface(content, NULL, rv, &(SDL_Rect){.x=2, .y=2});
+	SDL_FreeSurface(content);
 	SDL_FillRect(rv, &(SDL_Rect){.x=2, .y=1, .w=rv->w-4, .h=1}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
 	SDL_FillRect(rv, &(SDL_Rect){.x=2, .y=rv->h-2, .w=rv->w-4, .h=1}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
 	SDL_FillRect(rv, &(SDL_Rect){.x=1, .y=2, .w=1, .h=rv->h-4}, SDL_MapRGBA(rv->format, b->fgcolour.r, b->fgcolour.g, b->fgcolour.b, b->fgcolour.a));
@@ -270,15 +289,11 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 	{
 		if(element->clickable)
 		{
-			atg_ev_click *click=malloc(sizeof(atg_ev_click));
-			if(click)
-			{
-				click->e=element;
-				click->pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
-				click->button=button.button;
-				if(atg__push_event((atg_event){.type=ATG_EV_CLICK, .event.click=click}))
-					free(click);
-			}
+			atg_ev_click click;
+			click.e=element;
+			click.pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
+			click.button=button.button;
+			atg__push_event((atg_event){.type=ATG_EV_CLICK, .event.click=click});
 		}
 		switch(element->type)
 		{
@@ -289,14 +304,10 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 					atg__match_click_recursive(b->elems[i], button);
 			break;
 			case ATG_BUTTON:;
-				atg_ev_trigger *trigger=malloc(sizeof(atg_ev_trigger));
-				if(trigger)
-				{
-					trigger->e=element;
-					trigger->button=button.button;
-					if(atg__push_event((atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger}))
-						free(trigger);
-				}
+				atg_ev_trigger trigger;
+				trigger.e=element;
+				trigger.button=button.button;
+				atg__push_event((atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
 			break;
 			default:
 				// ignore
@@ -322,13 +333,7 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas)
 	SDL_Event s;
 	while(SDL_PollEvent(&s))
 	{
-		SDL_Event *sc=malloc(sizeof(SDL_Event));
-		if(sc)
-		{
-			*sc=s;
-			if(atg__push_event((atg_event){.type=ATG_EV_RAW, .event.raw=sc}))
-				free(sc);
-		}
+		atg__push_event((atg_event){.type=ATG_EV_RAW, .event.raw=s});
 		if(s.type==SDL_MOUSEBUTTONDOWN)
 		{
 			atg__match_click(canvas, s.button);

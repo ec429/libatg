@@ -150,11 +150,11 @@ typedef struct
 {
 	atg_event_type type;
 	union {
-		SDL_Event *raw;
-		atg_ev_click *click;
-		atg_ev_trigger *trigger;
-		atg_ev_toggle *toggle;
-		atg_ev_value *value;
+		SDL_Event raw;
+		atg_ev_click click;
+		atg_ev_trigger trigger;
+		atg_ev_toggle toggle;
+		atg_ev_value value;
 	} event;
 }
 atg_event;

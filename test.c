@@ -71,103 +71,82 @@ int main(void)
 			switch(e.type)
 			{
 				case ATG_EV_RAW:;
-					SDL_Event *s=e.event.raw;
-					if(s)
+					SDL_Event s=e.event.raw;
+					switch(s.type)
 					{
-						switch(s->type)
+						case SDL_QUIT:
+							errupt++;
+						break;
+					}
+				break;
+				case ATG_EV_CLICK:;
+					atg_ev_click click=e.event.click;
+					if(click.e)
+					{
+						switch(click.e->type)
 						{
-							case SDL_QUIT:
-								errupt++;
+							case ATG_LABEL:;
+								atg_label *l=click.e->elem.label;
+								if(l)
+								{
+									switch(click.button)
+									{
+										case ATG_MB_LEFT:
+											l->colour=(atg_colour){0, 255, 0, ATG_ALPHA_OPAQUE};
+										break;
+										case ATG_MB_RIGHT:
+											l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
+										break;
+										default:
+											l->colour=(atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE};
+										break;
+									}
+								}
+							break;
+							default:
+								fprintf(stderr, "Clicked on an element.type==%u\n", click.e->type);
 							break;
 						}
 					}
 					else
 					{
-						fprintf(stderr, "e.event.raw==NULL!\n");
-					}
-				break;
-				case ATG_EV_CLICK:;
-					atg_ev_click *click=e.event.click;
-					if(click)
-					{
-						if(click->e)
-						{
-							switch(click->e->type)
-							{
-								case ATG_LABEL:;
-									atg_label *l=click->e->elem.label;
-									if(l)
-									{
-										switch(click->button)
-										{
-											case ATG_MB_LEFT:
-												l->colour=(atg_colour){0, 255, 0, ATG_ALPHA_OPAQUE};
-											break;
-											case ATG_MB_RIGHT:
-												l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
-											break;
-											default:
-												l->colour=(atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE};
-											break;
-										}
-									}
-								break;
-								default:
-									fprintf(stderr, "Clicked on an element.type==%u\n", click->e->type);
-								break;
-							}
-						}
-						else
-						{
-							fprintf(stderr, "click->e==NULL!\n");
-						}
-					}
-					else
-					{
-						fprintf(stderr, "click==NULL!\n");
+						fprintf(stderr, "click.e==NULL!\n");
 					}
 				break;
 				case ATG_EV_TRIGGER:;
-					atg_ev_trigger *trigger=e.event.trigger;
-					if(trigger)
+					atg_ev_trigger trigger=e.event.trigger;
+					if(trigger.e)
 					{
-						if(trigger->e)
+						if(trigger.e==go)
 						{
-							if(trigger->e==go)
+							if(!stop)
 							{
-								if(!stop)
+								stop=atg_create_element_button("Stop!", (atg_colour){255, 63, 0, ATG_ALPHA_OPAQUE}, (atg_colour){0, 15, 47, ATG_ALPHA_OPAQUE});
+								if(stop)
 								{
-									stop=atg_create_element_button("Stop!", (atg_colour){255, 63, 0, ATG_ALPHA_OPAQUE}, (atg_colour){0, 15, 47, ATG_ALPHA_OPAQUE});
-									if(stop)
-									{
-										if(atg_pack_element(mainbox, stop))
-											perror("atg_pack_element");
-										else
-											going=true;
-									}
+									if(atg_pack_element(mainbox, stop))
+										perror("atg_pack_element");
 									else
-										fprintf(stderr, "atg_create_element_button failed\n");
+										going=true;
 								}
 								else
-									going=true;
-							}
-							else if(trigger->e==stop)
-							{
-								going=false;
+									fprintf(stderr, "atg_create_element_button failed\n");
 							}
 							else
-							{
-								fprintf(stderr, "trigger->e not recognised!\n");
-							}
+								going=true;
+						}
+						else if(trigger.e==stop)
+						{
+							going=false;
 						}
 						else
 						{
-							fprintf(stderr, "trigger->e==NULL!\n");
+							fprintf(stderr, "trigger->e not recognised!\n");
 						}
 					}
 					else
 					{
-						fprintf(stderr, "trigger==NULL!\n");
+						fprintf(stderr, "trigger->e==NULL!\n");
 					}
 				break;
 				default:

@@ -106,7 +106,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 		}
 		else
 		{
-			unsigned int x=0, y=0;
+			unsigned int x=e->w, y=0;
 			for(unsigned int i=0;i<b->nelems;i++)
 				if(els[i])
 				{
@@ -174,7 +174,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 		}
 		else
 		{
-			unsigned int x=0, y=0;
+			unsigned int x=0, y=e->h;
 			for(unsigned int i=0;i<b->nelems;i++)
 				if(els[i])
 				{

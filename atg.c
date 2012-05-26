@@ -228,6 +228,7 @@ SDL_Surface *atg_render_button(const atg_element *e)
 SDL_Surface *atg_render_element(const atg_element *e)
 {
 	if(!e) return(NULL);
+	if(e->hidden) return(NULL);
 	switch(e->type)
 	{
 		case ATG_BOX:
@@ -475,6 +476,7 @@ atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
 	rv->type=ATG_BOX;
 	rv->elem.box=b;
 	rv->clickable=false;
+	rv->hidden=false;
 	rv->userdata=NULL;
 	return(rv);
 }
@@ -493,6 +495,7 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->type=ATG_LABEL;
 	rv->elem.label=l;
 	rv->clickable=false;
+	rv->hidden=false;
 	rv->userdata=NULL;
 	return(rv);
 }
@@ -511,6 +514,7 @@ atg_element *atg_create_element_image(SDL_Surface *img)
 	rv->type=ATG_IMAGE;
 	rv->elem.image=i;
 	rv->clickable=false;
+	rv->hidden=false;
 	rv->userdata=NULL;
 	return(rv);
 }
@@ -529,6 +533,7 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->type=ATG_BUTTON;
 	rv->elem.button=b;
 	rv->clickable=false; // because it generates ATG_EV_TRIGGER events instead
+	rv->hidden=false;
 	rv->userdata=NULL;
 	return(rv);
 }

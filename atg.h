@@ -92,6 +92,7 @@ typedef struct atg_element
 		atg_spinner *spinner;
 	} elem;
 	bool clickable;
+	bool hidden;
 	void *userdata; // normally NULL; is not freed by atg_free_element()
 }
 atg_element;

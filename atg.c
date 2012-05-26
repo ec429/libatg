@@ -190,6 +190,17 @@ SDL_Surface *atg_render_label(const atg_element *e)
 	return(text);
 }
 
+SDL_Surface *atg_render_image(const atg_element *e)
+{
+	if(!e) return(NULL);
+	if(e->type!=ATG_IMAGE) return(NULL);
+	atg_image *i=e->elem.image;
+	if(!i) return(NULL);
+	SDL_Surface *rv=i->data;
+	rv->refcount++;
+	return(rv);
+}
+
 SDL_Surface *atg_render_button(const atg_element *e)
 {
 	if(!e) return(NULL);
@@ -223,6 +234,8 @@ SDL_Surface *atg_render_element(const atg_element *e)
 			return(atg_render_box(e));
 		case ATG_LABEL:
 			return(atg_render_label(e));
+		case ATG_IMAGE:
+			return(atg_render_image(e));
 		case ATG_BUTTON:
 			return(atg_render_button(e));
 		default:
@@ -402,6 +415,16 @@ atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour 
 	return(rv);
 }
 
+atg_image *atg_create_image(SDL_Surface *img)
+{
+	atg_image *rv=malloc(sizeof(atg_image));
+	if(rv)
+	{
+		(rv->data=img)->refcount++;
+	}
+	return(rv);
+}
+
 atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour)
 {
 	atg_button *rv=malloc(sizeof(atg_button));
@@ -451,6 +474,24 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->w=rv->h=0;
 	rv->type=ATG_LABEL;
 	rv->elem.label=l;
+	rv->clickable=false;
+	rv->userdata=NULL;
+	return(rv);
+}
+
+atg_element *atg_create_element_image(SDL_Surface *img)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_image *i=atg_create_image(img);
+	if(!i)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type=ATG_IMAGE;
+	rv->elem.image=i;
 	rv->clickable=false;
 	rv->userdata=NULL;
 	return(rv);
@@ -510,6 +551,16 @@ atg_label *atg_copy_label(const atg_label *l)
 	return(rv);
 }
 
+atg_image *atg_copy_image(const atg_image *i)
+{
+	if(!i) return(NULL);
+	atg_image *rv=malloc(sizeof(atg_image));
+	if(!rv) return(NULL);
+	*rv=*i;
+	(rv->data=i->data)->refcount++;
+	return(rv);
+}
+
 atg_button *atg_copy_button(const atg_button *b)
 {
 	if(!b) return(NULL);
@@ -533,6 +584,9 @@ atg_element *atg_copy_element(const atg_element *e)
 			return(rv);
 		case ATG_LABEL:
 			rv->elem.label=atg_copy_label(e->elem.label);
+			return(rv);
+		case ATG_IMAGE:
+			rv->elem.image=atg_copy_image(e->elem.image);
 			return(rv);
 		case ATG_BUTTON:
 			rv->elem.button=atg_copy_button(e->elem.button);
@@ -573,6 +627,15 @@ void atg_free_label(atg_label *label)
 	free(label);
 }
 
+void atg_free_image(atg_image *image)
+{
+	if(image)
+	{
+		SDL_FreeSurface(image->data);
+	}
+	free(image);
+}
+
 void atg_free_button(atg_button *button)
 {
 	if(button)
@@ -593,6 +656,9 @@ void atg_free_element(atg_element *element)
 			break;
 			case ATG_LABEL:
 				atg_free_label(element->elem.label);
+			break;
+			case ATG_IMAGE:
+				atg_free_image(element->elem.image);
 			break;
 			case ATG_BUTTON:
 				atg_free_button(element->elem.button);

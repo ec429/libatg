@@ -164,6 +164,7 @@ void atg_flip(atg_canvas *canvas);
 int atg_poll_event(atg_event *event, atg_canvas *canvas);
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
+int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h);
 atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_image *atg_create_image(SDL_Surface *img);

@@ -138,6 +138,7 @@ int main(void)
 						else if(trigger.e==stop)
 						{
 							going=false;
+							atg_resize_canvas(canvas, 240, 160);
 						}
 						else
 						{

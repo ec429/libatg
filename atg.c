@@ -16,7 +16,7 @@ SDL_Surface *gf_init(unsigned int w, unsigned int h)
 		return(NULL);
 	}
 	atexit(SDL_Quit);
-	if((screen=SDL_SetVideoMode(w, h, 32, SDL_HWSURFACE))==0)
+	if(!(screen=SDL_SetVideoMode(w, h, 32, SDL_HWSURFACE)))
 	{
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
 		return(NULL);
@@ -362,6 +362,19 @@ atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolou
 		rv->box=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
 	}
 	return(rv);
+}
+
+int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
+{
+	if(!canvas) return(1);
+	SDL_Surface *screen=SDL_SetVideoMode(w, h, 32, SDL_HWSURFACE);
+	if(!screen)
+	{
+		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
+		return(2);
+	}
+	canvas->surface=screen;
+	return(0);
 }
 
 atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour)

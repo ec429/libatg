@@ -461,6 +461,24 @@ atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour
 	return(rv);
 }
 
+atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_box *b=atg_create_box(flags, bgcolour);
+	if(!b)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type=ATG_BOX;
+	rv->elem.box=b;
+	rv->clickable=false;
+	rv->userdata=NULL;
+	return(rv);
+}
+
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));

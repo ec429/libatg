@@ -83,12 +83,45 @@ SDL_Surface *atg_render_box(const atg_element *e)
 			}
 			else
 			{
-				fprintf(stderr, "ABPV+h, no w\n");
+				unsigned int x=0, y=0, xmax=0;
+				for(unsigned int i=0;i<b->nelems;i++)
+				{
+					if(!els[i]) continue;
+					if(y+els[i]->h>e->h)
+					{
+						y=0;
+						x=xmax;
+					}
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=els[i]->w, .h=els[i]->h};
+					y+=els[i]->w;
+					if(x+els[i]->w>xmax)
+						xmax=x+els[i]->w;
+				}
+				rv=SDL_CreateRGBSurface(SDL_HWSURFACE, xmax, e->h, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+				SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
+				for(unsigned int i=0;i<b->nelems;i++)
+					if(els[i])
+						SDL_BlitSurface(els[i], NULL, rv, &b->elems[i]->display);
 			}
 		}
 		else
 		{
-			fprintf(stderr, "ABPV no h\n");
+			unsigned int x=0, y=0;
+			for(unsigned int i=0;i<b->nelems;i++)
+				if(els[i])
+				{
+					y+=els[i]->h;
+					if((unsigned int)els[i]->w>x) x=els[i]->w;
+				}
+			rv=SDL_CreateRGBSurface(SDL_HWSURFACE, x, y, screen->format->BitsPerPixel, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+			SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, b->bgcolour.r, b->bgcolour.g, b->bgcolour.b, b->bgcolour.a));
+			y=0;
+			for(unsigned int i=0;i<b->nelems;i++)
+				if(els[i])
+				{
+					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=0, .y=y});
+					y+=els[i]->h;
+				}
 		}
 	}
 	else

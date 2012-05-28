@@ -120,6 +120,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 				if(els[i])
 				{
 					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=0, .y=y});
+					b->elems[i]->display=(SDL_Rect){.x=0, .y=y, .w=els[i]->w, .h=els[i]->h};
 					y+=els[i]->h;
 				}
 		}
@@ -188,6 +189,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 				if(els[i])
 				{
 					SDL_BlitSurface(els[i], NULL, rv, &(SDL_Rect){.x=x, .y=0});
+					b->elems[i]->display=(SDL_Rect){.x=x, .y=0, .w=els[i]->w, .h=els[i]->h};
 					x+=els[i]->w;
 				}
 		}

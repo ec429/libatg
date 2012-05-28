@@ -326,14 +326,14 @@ int atg__push_event(atg_event event)
 	}
 }
 
-void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent button)
+void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
 	if(!element) return;
 	if(
-		(button.x>=element->display.x)
-		&&(button.x<element->display.x+element->display.w)
-		&&(button.y>=element->display.y)
-		&&(button.y<element->display.y+element->display.h)
+		(button.x>=element->display.x+xoff)
+		&&(button.x<element->display.x+xoff+element->display.w)
+		&&(button.y>=element->display.y+yoff)
+		&&(button.y<element->display.y+yoff+element->display.h)
 	)
 	{
 		if(element->clickable)
@@ -350,7 +350,7 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 				atg_box *b=element->elem.box;
 				if(!b->elems) return;
 				for(unsigned int i=0;i<b->nelems;i++)
-					atg__match_click_recursive(b->elems[i], button);
+					atg__match_click_recursive(b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
 			break;
 			case ATG_BUTTON:;
 				atg_ev_trigger trigger;
@@ -372,7 +372,7 @@ void atg__match_click(atg_canvas *canvas, SDL_MouseButtonEvent button)
 	atg_box *b=canvas->box;
 	if(!b->elems) return;
 	for(unsigned int i=0;i<b->nelems;i++)
-		atg__match_click_recursive(b->elems[i], button);
+		atg__match_click_recursive(b->elems[i], button, 0, 0);
 }
 
 int atg_poll_event(atg_event *event, atg_canvas *canvas)

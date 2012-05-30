@@ -231,6 +231,10 @@ SDL_Surface *atg_render_image(const atg_element *e)
 	if(e->type!=ATG_IMAGE) return(NULL);
 	atg_image *i=e->elem.image;
 	if(!i) return(NULL);
+	if(e->w||e->h)
+	{
+		return(atg_resize_surface(i->data, e));
+	}
 	SDL_Surface *rv=i->data;
 	rv->refcount++;
 	return(rv);

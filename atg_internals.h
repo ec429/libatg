@@ -1,4 +1,11 @@
 #pragma once
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	atg_internals: definitions for making custom widgets
+*/
 
 SDL_Surface *atg_render_element(const atg_element *e);
 

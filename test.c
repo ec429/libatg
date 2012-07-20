@@ -1,3 +1,11 @@
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	test: A test program for the basic functionality
+*/
+
 #include <stdio.h>
 #include <SDL.h>
 #include "atg.h"

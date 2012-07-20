@@ -66,6 +66,18 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	if(!els) return(NULL);
 	for(unsigned int i=0;i<b->nelems;i++)
 		els[i]=atg_render_element(b->elems[i]);
+	/* Box packing.
+		This is all a horrid mess; there must be a cleaner way to do this */
+	/* Packing rules: for VERTICAL [HORIZONTAL]
+		If we have a height [width], we fill up each column [row] to that size;
+		once we get something that doesn't fit, we give up on that column [row]
+		and never go back to it.
+		If we also have a width [height], we ignore anything that's left once
+		it's been exceeded.
+		If we only have a width [height] and no height [width], we just treat
+		it as a minimum, and stack everything into a single column [row].
+		If we have neither, we stack everything into a single column [row] that
+		is as wide [tall] as the widest [tallest] element. */
 	if(b->flags&ATG_BOX_PACK_VERTICAL)
 	{
 		if(e->h)

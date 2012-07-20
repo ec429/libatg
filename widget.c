@@ -98,6 +98,9 @@ int main(void)
 const char *sel_labels[4]={"NONE","LOW","MED","HIGH"};
 atg_colour sel_colours[4]={{31, 31, 95, 0}, {95, 31, 31, 0}, {95, 95, 15, 0}, {31, 159, 31, 0}};
 
+/* Prototype for the selector renderer */
+SDL_Surface *selector_render_callback(const struct atg_element *e);
+
 /* Prototype for the click handler */
 void selector_match_click_callback(struct atg_event_list *list, atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
 
@@ -107,6 +110,7 @@ atg_element *create_selector(unsigned int *sel)
 	atg_element *rv=atg_create_element_box(ATG_BOX_PACK_HORIZONTAL, (atg_colour){63, 63, 63, ATG_ALPHA_OPAQUE}); /* Start with an atg_box */
 	if(!rv) return(NULL);
 	rv->type=ATG_CUSTOM; /* Mark it as a custom widget, so that our callbacks will be used */
+	rv->render_callback=selector_render_callback; /* Connect up our renderer callback */
 	rv->match_click_callback=selector_match_click_callback; /* Connect up our click-handling callback */
 	atg_box *b=rv->elem.box;
 	if(!b)
@@ -118,11 +122,7 @@ atg_element *create_selector(unsigned int *sel)
 	{
 		atg_colour fg=sel_colours[i];
 		/* Create the button */
-		atg_element *btn=atg_create_element_button(sel_labels[i], fg,
-			(sel&&(i==*sel))
-				?(atg_colour){159, 159, 159, ATG_ALPHA_OPAQUE}
-				:(atg_colour){31, 31, 31, ATG_ALPHA_OPAQUE}
-			);
+		atg_element *btn=atg_create_element_button(sel_labels[i], fg, (atg_colour){63, 63, 63, ATG_ALPHA_OPAQUE});
 		if(!btn)
 		{
 			atg_free_element(rv);
@@ -137,6 +137,31 @@ atg_element *create_selector(unsigned int *sel)
 	}
 	rv->userdata=sel; /* sel stores the currently selected value */
 	return(rv);
+}
+
+/* Function to render the 'selector' widget */
+SDL_Surface *selector_render_callback(const struct atg_element *e)
+{
+	if(!e) return(NULL);
+	if(!(e->type==ATG_CUSTOM)) return(NULL);
+	atg_box *b=e->elem.box;
+	if(!b) return(NULL);
+	if(!b->elems) return(NULL);
+	/* Set the background colours */
+	for(unsigned int i=0;i<b->nelems;i++)
+	{
+		if(e->userdata)
+		{
+			if(*(unsigned int *)e->userdata==i)
+				b->elems[i]->elem.button->content->bgcolour=(atg_colour){159, 159, 159, ATG_ALPHA_OPAQUE};
+			else
+				b->elems[i]->elem.button->content->bgcolour=(atg_colour){31, 31, 31, ATG_ALPHA_OPAQUE};
+		}
+		else
+			b->elems[i]->elem.button->content->bgcolour=(atg_colour){63, 63, 63, ATG_ALPHA_OPAQUE};
+	}
+	/* Hand off the actual rendering to atg_render_box */
+	return(atg_render_box(e));
 }
 
 /* Function to handle clicks within the 'selector' widget */
@@ -181,19 +206,6 @@ void selector_match_click_callback(struct atg_event_list *list, atg_element *ele
 		atg__event_list *next=sub_list.list->next;
 		free(sub_list.list);
 		sub_list.list=next;
-	}
-	/* Set the bgcolours to indicate which value is selected */
-	for(unsigned int i=0;i<b->nelems;i++)
-	{
-		if(element->userdata)
-		{
-			if(*(unsigned int *)element->userdata==i)
-				b->elems[i]->elem.button->content->bgcolour=(atg_colour){159, 159, 159, ATG_ALPHA_OPAQUE};
-			else
-				b->elems[i]->elem.button->content->bgcolour=(atg_colour){31, 31, 31, ATG_ALPHA_OPAQUE};
-		}
-		else
-			b->elems[i]->elem.button->content->bgcolour=(atg_colour){63, 63, 63, ATG_ALPHA_OPAQUE};
 	}
 	if(element->userdata&&(*(unsigned int *)element->userdata!=oldsel))
 	{

@@ -8,6 +8,6 @@ atg Event Queue:
 Custom Widgets:
 	atg can be extended with custom widgets.  If a widget's type is ATG_CUSTOM, atg will use its callbacks to render, handle clicks, and free.
 	An example of this is the 'selector' widget created in widget.c.  It consists of a box containing four buttons.  When one of these buttons is clicked, the value is set (written through the "userdata" pointer), and the selected option is highlighted.
-	The render callback is left at the default; since the widget was created with atg_create_element_box, this is atg_render_box.  Consequently, the box and its contents are rendered in the normal way.  This is usually what you want when your widget is based on a box.
+	The render callback, selector_render_callback, applies the highlighting of the currently selected option, and then hands off the actual rendering to atg_render_box.  Consequently, the box and its contents are rendered in the normal way.  This is usually what you want when your widget is based on a box.
 	The click-handler callback, selector_match_click_callback, uses atg__match_click_recursive to pass the click to the child elements (the four buttons), but then catches their events itself and interprets them, instead of passing them back down the stack.  It generates a value-change event if the selected value has changed.
-	The free callback is left at the default (atg_free_box).
+	The free callback is left at the default; since the widget was created with atg_create_element_box, this is atg_free_box.

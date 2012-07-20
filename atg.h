@@ -56,7 +56,7 @@ atg_colour;
 
 typedef struct
 {
-	Uint8 flags; // for ATG_BOX_PACK_HORIZONTAL and ATG_BOX_PACK_VERTICAL
+	Uint8 flags; /* for ATG_BOX_PACK_HORIZONTAL and ATG_BOX_PACK_VERTICAL */
 	unsigned int nelems;
 	struct atg_element **elems;
 	atg_colour bgcolour;
@@ -87,7 +87,7 @@ atg_button;
 typedef struct
 {
 	int minval, maxval, step;
-	Uint8 flags; // for ATG_SPINNER_RIGHTCLICK_STEP10 and ATG_SPINNER_RIGHTCLICK_TIMES2
+	Uint8 flags; /* for ATG_SPINNER_RIGHTCLICK_STEP10 and ATG_SPINNER_RIGHTCLICK_TIMES2 */
 	int value;
 	atg_box *content;
 }
@@ -107,8 +107,8 @@ struct atg_event_list
 
 typedef struct atg_element
 {
-	unsigned int w, h; // width and height (0 for either means "shrink around contents")
-	SDL_Rect display; // co-ordinates within containing box
+	unsigned int w, h; /* width and height (0 for either means "shrink around contents") */
+	SDL_Rect display; /* co-ordinates within containing box */
 	SDL_Surface *(*render_callback)(const struct atg_element *e);
 	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
 	void (*free_callback)(struct atg_element *e);
@@ -122,17 +122,17 @@ typedef struct atg_element
 	} elem;
 	bool clickable;
 	bool hidden;
-	void *userdata; // normally NULL; is not freed by atg_free_element()
+	void *userdata; /* normally NULL; is not freed by atg_free_element() */
 }
 atg_element;
 
 typedef enum
 {
-	ATG_EV_RAW, // raw SDL event
-	ATG_EV_CLICK, // click in a clickable area
-	ATG_EV_TRIGGER, // click on a button
-	ATG_EV_TOGGLE, // set/clear a togglebutton, checkbox, or other toggleable
-	ATG_EV_VALUE, // change of value (eg. of a spinner)
+	ATG_EV_RAW, /* raw SDL event */
+	ATG_EV_CLICK, /* click in a clickable area */
+	ATG_EV_TRIGGER, /* click on a button */
+	ATG_EV_TOGGLE, /* set/clear a togglebutton, checkbox, or other toggleable */
+	ATG_EV_VALUE, /* change of value (eg. of a spinner) */
 }
 atg_event_type;
 
@@ -148,31 +148,31 @@ atg_mousebutton;
 
 typedef struct
 {
-	atg_element *e; // the element which caught the click
-	atg_pos pos; // position of click relative to element top-left corner
+	atg_element *e; /* the element which caught the click */
+	atg_pos pos; /* position of click relative to element top-left corner */
 	atg_mousebutton button;
 }
 atg_ev_click;
 
 typedef struct
 {
-	atg_element *e; // the element which was triggered
+	atg_element *e; /* the element which was triggered */
 	atg_mousebutton button;
 }
 atg_ev_trigger;
 
 typedef struct
 {
-	atg_element *e; // the element which was toggled
+	atg_element *e; /* the element which was toggled */
 	atg_mousebutton button;
-	bool active; // the new state of the toggleable
+	bool active; /* the new state of the toggleable */
 }
 atg_ev_toggle;
 
 typedef struct
 {
-	atg_element *e; // the element whose value was changed
-	int value; // the new value of the element
+	atg_element *e; /* the element whose value was changed */
+	int value; /* the new value of the element */
 }
 atg_ev_value;
 

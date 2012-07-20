@@ -46,8 +46,9 @@ SDL_Surface *atg_resize_surface(SDL_Surface *src, const atg_element *e)
 SDL_Surface *atg_render_box(const atg_element *e)
 {
 	SDL_Surface *screen=SDL_GetVideoSurface();
-	if(!screen) return(NULL); // can't find out display format
+	if(!screen) return(NULL); /* can't find out display format */
 	if(!e) return(NULL);
+	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM)) return(NULL);
 	atg_box *b=e->elem.box;
 	if(!b) return(NULL);
 	SDL_Surface **els=malloc(b->nelems*sizeof(SDL_Surface *)), *rv=NULL;
@@ -204,7 +205,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 		initttf();
 	if(!ttfinit) return(NULL);
 	if(!e) return(NULL);
-	if(e->type!=ATG_LABEL) return(NULL);
+	if(!((e->type==ATG_LABEL)||(e->type==ATG_CUSTOM)) return(NULL);
 	atg_label *l=e->elem.label;
 	if(!l) return(NULL);
 	if((l->fontsize>MAXFONTSIZE)||!l->fontsize) return(NULL);
@@ -226,6 +227,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 SDL_Surface *atg_render_image(const atg_element *e)
 {
 	if(!e) return(NULL);
+	if(!((e->type==ATG_IMAGE)||(e->type==ATG_CUSTOM)) return(NULL);
 	atg_image *i=e->elem.image;
 	if(!i) return(NULL);
 	if(e->w||e->h)
@@ -240,6 +242,7 @@ SDL_Surface *atg_render_image(const atg_element *e)
 SDL_Surface *atg_render_button(const atg_element *e)
 {
 	if(!e) return(NULL);
+	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM)) return(NULL);
 	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w?e->w-4:0, .h=e->h?e->h-4:0, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
@@ -274,9 +277,11 @@ SDL_Surface *atg_render_element(const atg_element *e)
 			return(atg_render_image(e));
 		case ATG_BUTTON:
 			return(atg_render_button(e));
-		default:
+		case ATG_CUSTOM:
 			if(e->render_callback)
 				return(e->render_callback(e));
+			/* fallthrough */
+		default:
 			return(NULL);
 	}
 }
@@ -354,10 +359,12 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 				trigger.button=button.button;
 				atg__push_event(list, (atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
 			break;
-			default:
+			case ATG_CUSTOM:
 				if(element->match_click_callback)
 					element->match_click_callback(list, element, button, xoff, yoff);
-				// else ignore
+				/* fallthrough */
+			default:
+				/* ignore */
 			break;
 		}
 	}
@@ -574,7 +581,7 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->w=rv->h=0;
 	rv->type=ATG_BUTTON;
 	rv->elem.button=b;
-	rv->clickable=false; // because it generates ATG_EV_TRIGGER events instead
+	rv->clickable=false; /* because it generates ATG_EV_TRIGGER events instead */
 	rv->hidden=false;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_button;
@@ -744,14 +751,16 @@ void atg_free_element(atg_element *element)
 			case ATG_BUTTON:
 				atg_free_button(element);
 			break;
-			default:
+			case ATG_CUSTOM:
 				if(element->free_callback)
-					element->free_callback(element);
-				else
 				{
-					/* Bad things */
-					fprintf(stderr, "Bad things! %d\n", element->type);
+					element->free_callback(element);
+					break;
 				}
+				/* fallthrough */
+			default:
+				/* Bad things */
+				fprintf(stderr, "Don't know how to free element of type %d, very bad things!\n", element->type);
 			break;
 		}
 	}

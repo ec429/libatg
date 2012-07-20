@@ -4,7 +4,7 @@
 	Copyright (C) 2012 Edward Cree
 	
 	See atg.h for license information
-	atg_internals: definitions for making custom widgets
+	atg_internals.h: definitions for making custom widgets
 */
 
 SDL_Surface *atg_render_element(const atg_element *e);

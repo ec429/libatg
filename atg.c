@@ -1,3 +1,14 @@
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	atg.c: provides all the actual functions
+	
+	TODO: this really ought to be split up into separate files.
+		Perhaps one file for 'plumbing' and then one for each widget.
+*/
+
 #include "atg.h"
 #include "atg_internals.h"
 #include <string.h>
@@ -48,7 +59,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	SDL_Surface *screen=SDL_GetVideoSurface();
 	if(!screen) return(NULL); /* can't find out display format */
 	if(!e) return(NULL);
-	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM)) return(NULL);
+	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_box *b=e->elem.box;
 	if(!b) return(NULL);
 	SDL_Surface **els=malloc(b->nelems*sizeof(SDL_Surface *)), *rv=NULL;
@@ -205,7 +216,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 		initttf();
 	if(!ttfinit) return(NULL);
 	if(!e) return(NULL);
-	if(!((e->type==ATG_LABEL)||(e->type==ATG_CUSTOM)) return(NULL);
+	if(!((e->type==ATG_LABEL)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_label *l=e->elem.label;
 	if(!l) return(NULL);
 	if((l->fontsize>MAXFONTSIZE)||!l->fontsize) return(NULL);
@@ -227,7 +238,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 SDL_Surface *atg_render_image(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_IMAGE)||(e->type==ATG_CUSTOM)) return(NULL);
+	if(!((e->type==ATG_IMAGE)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_image *i=e->elem.image;
 	if(!i) return(NULL);
 	if(e->w||e->h)
@@ -242,7 +253,7 @@ SDL_Surface *atg_render_image(const atg_element *e)
 SDL_Surface *atg_render_button(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM)) return(NULL);
+	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w?e->w-4:0, .h=e->h?e->h-4:0, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});

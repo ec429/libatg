@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdbool.h>
 #include <SDL.h>
 
@@ -17,6 +19,8 @@ typedef enum
 	ATG_IMAGE,
 	ATG_BUTTON,
 	ATG_SPINNER,
+	
+	ATG_CUSTOM,
 }
 atg_type;
 
@@ -79,10 +83,18 @@ typedef struct
 }
 atg_canvas;
 
+struct atg_event_list
+{
+	struct atg__event_list *list, *last;
+};
+
 typedef struct atg_element
 {
 	unsigned int w, h; // width and height (0 for either means "shrink around contents")
 	SDL_Rect display; // co-ordinates within containing box
+	SDL_Surface *(*render_callback)(const struct atg_element *e);
+	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
+	void (*free_callback)(struct atg_element *e);
 	atg_type type;
 	union {
 		atg_box *box;
@@ -182,10 +194,11 @@ int atg_pack_element(atg_box *box, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);
 
 void atg_free_canvas(atg_canvas *canvas);
-void atg_free_box(atg_box *box);
-void atg_free_label(atg_label *label);
-void atg_free_image(atg_image *image);
-void atg_free_button(atg_button *button);
-void atg_free_spinner(atg_spinner *spinner);
+void atg_free_box(atg_element *e);
+void atg_free_box_box(atg_box *b);
+void atg_free_label(atg_element *e);
+void atg_free_image(atg_element *e);
+void atg_free_button(atg_element *e);
+void atg_free_spinner(atg_element *e);
 
 void atg_free_element(atg_element *element);

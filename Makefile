@@ -10,7 +10,7 @@ all: atg.o test
 test: test.c atg.h atg.o
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test atg.o $(SDL)
 
-atg.o: atg.c atg.h
+atg.o: atg.c atg.h atg_internals.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -o $@ -c $<
 
 %.o: %.c %.h

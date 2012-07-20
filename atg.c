@@ -1,4 +1,5 @@
 #include "atg.h"
+#include "atg_internals.h"
 #include <string.h>
 #include <SDL_ttf.h>
 
@@ -32,8 +33,6 @@ void initttf(void)
 	ttfinit=true;
 }
 
-SDL_Surface *atg_render_element(const atg_element *e);
-
 SDL_Surface *atg_resize_surface(SDL_Surface *src, const atg_element *e)
 {
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, e->w?(int)e->w:src->w, e->h?(int)e->h:src->h, src->format->BitsPerPixel, src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask);
@@ -49,7 +48,6 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	SDL_Surface *screen=SDL_GetVideoSurface();
 	if(!screen) return(NULL); // can't find out display format
 	if(!e) return(NULL);
-	if(e->type!=ATG_BOX) return(NULL);
 	atg_box *b=e->elem.box;
 	if(!b) return(NULL);
 	SDL_Surface **els=malloc(b->nelems*sizeof(SDL_Surface *)), *rv=NULL;
@@ -228,7 +226,6 @@ SDL_Surface *atg_render_label(const atg_element *e)
 SDL_Surface *atg_render_image(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(e->type!=ATG_IMAGE) return(NULL);
 	atg_image *i=e->elem.image;
 	if(!i) return(NULL);
 	if(e->w||e->h)
@@ -243,7 +240,6 @@ SDL_Surface *atg_render_image(const atg_element *e)
 SDL_Surface *atg_render_button(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(e->type!=ATG_BUTTON) return(NULL);
 	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w?e->w-4:0, .h=e->h?e->h-4:0, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
@@ -279,6 +275,8 @@ SDL_Surface *atg_render_element(const atg_element *e)
 		case ATG_BUTTON:
 			return(atg_render_button(e));
 		default:
+			if(e->render_callback)
+				return(e->render_callback(e));
 			return(NULL);
 	}
 }
@@ -294,43 +292,37 @@ void atg_flip(atg_canvas *canvas)
 	SDL_Flip(canvas->surface);
 }
 
-typedef struct atg__event_list
+int atg__push_event(struct atg_event_list *list, atg_event event)
 {
-	atg_event event;
-	struct atg__event_list *next;
-}
-atg__event_list;
-
-static atg__event_list *list=NULL, *last=NULL;
-
-int atg__push_event(atg_event event)
-{
-	if(last)
+	if(!list) return(1);
+	if(list->last)
 	{
-		if(!(last->next=malloc(sizeof(atg__event_list))))
+		if(!(list->last->next=malloc(sizeof(atg__event_list))))
 			return(1);
-		*(last=last->next)=(atg__event_list){.event=event, .next=NULL};
+		*(list->last=list->last->next)=(atg__event_list){.event=event, .next=NULL};
 		return(0);
 	}
-	else if(list)
+	else if(list->list)
 	{
-		last=list;
-		while(last->next) last=last->next;
-		if(!(last->next=malloc(sizeof(atg__event_list))))
+		list->last=list->list;
+		while(list->last->next) list->last=list->last->next;
+		if(!(list->last->next=malloc(sizeof(atg__event_list))))
 			return(1);
-		*(last=last->next)=(atg__event_list){.event=event, .next=NULL};
+		*(list->last=list->last->next)=(atg__event_list){.event=event, .next=NULL};
 		return(0);
 	}
 	else
 	{
-		if(!(last=list=malloc(sizeof(atg__event_list))))
+		if(!(list->last=list->list=malloc(sizeof(atg__event_list))))
 			return(1);
-		*last=(atg__event_list){.event=event, .next=NULL};
+		*list->last=(atg__event_list){.event=event, .next=NULL};
 		return(0);
 	}
 }
 
-void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
+static struct atg_event_list atg__ev_list={.list=NULL, .last=NULL};
+
+void atg__match_click_recursive(struct atg_event_list *list, atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
 	if(!element) return;
 	if(
@@ -346,7 +338,7 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 			click.e=element;
 			click.pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
 			click.button=button.button;
-			atg__push_event((atg_event){.type=ATG_EV_CLICK, .event.click=click});
+			atg__push_event(list, (atg_event){.type=ATG_EV_CLICK, .event.click=click});
 		}
 		switch(element->type)
 		{
@@ -354,51 +346,53 @@ void atg__match_click_recursive(atg_element *element, SDL_MouseButtonEvent butto
 				atg_box *b=element->elem.box;
 				if(!b->elems) return;
 				for(unsigned int i=0;i<b->nelems;i++)
-					atg__match_click_recursive(b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
+					atg__match_click_recursive(list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
 			break;
 			case ATG_BUTTON:;
 				atg_ev_trigger trigger;
 				trigger.e=element;
 				trigger.button=button.button;
-				atg__push_event((atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
+				atg__push_event(list, (atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
 			break;
 			default:
-				// ignore
+				if(element->match_click_callback)
+					element->match_click_callback(list, element, button, xoff, yoff);
+				// else ignore
 			break;
 		}
 	}
 }
 
-void atg__match_click(atg_canvas *canvas, SDL_MouseButtonEvent button)
+void atg__match_click(struct atg_event_list *list, atg_canvas *canvas, SDL_MouseButtonEvent button)
 {
 	if(!canvas) return;
 	if(!canvas->box) return;
 	atg_box *b=canvas->box;
 	if(!b->elems) return;
 	for(unsigned int i=0;i<b->nelems;i++)
-		atg__match_click_recursive(b->elems[i], button, 0, 0);
+		atg__match_click_recursive(list, b->elems[i], button, 0, 0);
 }
 
 int atg_poll_event(atg_event *event, atg_canvas *canvas)
 {
-	if(!event) return(list?1:SDL_PollEvent(NULL));
+	if(!event) return(atg__ev_list.list?1:SDL_PollEvent(NULL));
 	if(!canvas) return(0);
 	SDL_Event s;
 	while(SDL_PollEvent(&s))
 	{
-		atg__push_event((atg_event){.type=ATG_EV_RAW, .event.raw=s});
+		atg__push_event(&atg__ev_list, (atg_event){.type=ATG_EV_RAW, .event.raw=s});
 		if(s.type==SDL_MOUSEBUTTONDOWN)
 		{
-			atg__match_click(canvas, s.button);
+			atg__match_click(&atg__ev_list, canvas, s.button);
 		}
 	}
-	if(list)
+	if(atg__ev_list.list)
 	{
-		*event=list->event;
-		atg__event_list *next=list->next;
-		free(list);
-		if(last==list) last=NULL;
-		list=next;
+		*event=atg__ev_list.list->event;
+		atg__event_list *next=atg__ev_list.list->next;
+		free(atg__ev_list.list);
+		if(atg__ev_list.last==atg__ev_list.list) atg__ev_list.last=NULL;
+		atg__ev_list.list=next;
 		return(1);
 	}
 	return(0);
@@ -480,14 +474,14 @@ atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour
 				if(atg_pack_element(rv->content, l))
 				{
 					atg_free_element(l);
-					atg_free_box(rv->content);
+					atg_free_box_box(rv->content);
 					free(rv);
 					return(NULL);
 				}
 			}
 			else
 			{
-				atg_free_box(rv->content);
+				atg_free_box_box(rv->content);
 				free(rv);
 				return(NULL);
 			}
@@ -517,6 +511,9 @@ atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
 	rv->clickable=false;
 	rv->hidden=false;
 	rv->userdata=NULL;
+	rv->render_callback=atg_render_box;
+	rv->match_click_callback=NULL;
+	rv->free_callback=atg_free_box;
 	return(rv);
 }
 
@@ -536,6 +533,9 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->clickable=false;
 	rv->hidden=false;
 	rv->userdata=NULL;
+	rv->render_callback=atg_render_label;
+	rv->match_click_callback=NULL;
+	rv->free_callback=atg_free_label;
 	return(rv);
 }
 
@@ -555,6 +555,9 @@ atg_element *atg_create_element_image(SDL_Surface *img)
 	rv->clickable=false;
 	rv->hidden=false;
 	rv->userdata=NULL;
+	rv->render_callback=atg_render_image;
+	rv->match_click_callback=NULL;
+	rv->free_callback=atg_free_image;
 	return(rv);
 }
 
@@ -574,6 +577,9 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->clickable=false; // because it generates ATG_EV_TRIGGER events instead
 	rv->hidden=false;
 	rv->userdata=NULL;
+	rv->render_callback=atg_render_button;
+	rv->match_click_callback=NULL;
+	rv->free_callback=atg_free_button;
 	return(rv);
 }
 
@@ -664,12 +670,19 @@ void atg_free_canvas(atg_canvas *canvas)
 	if(canvas)
 	{
 		SDL_FreeSurface(canvas->surface);
-		atg_free_box(canvas->box);
+		atg_free_box_box(canvas->box);
 	}
 	free(canvas);
 }
 
-void atg_free_box(atg_box *box)
+void atg_free_box(atg_element *e)
+{
+	if(!e) return;
+	atg_box *box=e->elem.box;
+	atg_free_box_box(box);
+}
+
+void atg_free_box_box(atg_box *box)
 {
 	if(box)
 	{
@@ -680,8 +693,10 @@ void atg_free_box(atg_box *box)
 	free(box);
 }
 
-void atg_free_label(atg_label *label)
+void atg_free_label(atg_element *e)
 {
+	if(!e) return;
+	atg_label *label=e->elem.label;
 	if(label)
 	{
 		free(label->text);
@@ -689,8 +704,10 @@ void atg_free_label(atg_label *label)
 	free(label);
 }
 
-void atg_free_image(atg_image *image)
+void atg_free_image(atg_element *e)
 {
+	if(!e) return;
+	atg_image *image=e->elem.image;
 	if(image)
 	{
 		SDL_FreeSurface(image->data);
@@ -698,11 +715,13 @@ void atg_free_image(atg_image *image)
 	free(image);
 }
 
-void atg_free_button(atg_button *button)
+void atg_free_button(atg_element *e)
 {
+	if(!e) return;
+	atg_button *button=e->elem.button;
 	if(button)
 	{
-		atg_free_box(button->content);
+		atg_free_box_box(button->content);
 	}
 	free(button);
 }
@@ -714,19 +733,25 @@ void atg_free_element(atg_element *element)
 		switch(element->type)
 		{
 			case ATG_BOX:
-				atg_free_box(element->elem.box);
+				atg_free_box(element);
 			break;
 			case ATG_LABEL:
-				atg_free_label(element->elem.label);
+				atg_free_label(element);
 			break;
 			case ATG_IMAGE:
-				atg_free_image(element->elem.image);
+				atg_free_image(element);
 			break;
 			case ATG_BUTTON:
-				atg_free_button(element->elem.button);
+				atg_free_button(element);
 			break;
 			default:
-				/* Bad things */
+				if(element->free_callback)
+					element->free_callback(element);
+				else
+				{
+					/* Bad things */
+					fprintf(stderr, "Bad things! %d\n", element->type);
+				}
 			break;
 		}
 	}

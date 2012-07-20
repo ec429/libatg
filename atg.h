@@ -89,6 +89,7 @@ typedef struct
 	int minval, maxval, step;
 	Uint8 flags; /* for ATG_SPINNER_RIGHTCLICK_STEP10 and ATG_SPINNER_RIGHTCLICK_TIMES2 */
 	int value;
+	char *fmt;
 	atg_box *content;
 }
 atg_spinner;
@@ -199,13 +200,13 @@ atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_image *atg_create_image(SDL_Surface *img);
 atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
-atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue);
+atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
 
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_element *atg_create_element_image(SDL_Surface *img);
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
-atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue);
+atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
 
 int atg_pack_element(atg_box *box, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);

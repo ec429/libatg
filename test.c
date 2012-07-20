@@ -31,6 +31,14 @@ int main(void)
 	}
 	else
 		fprintf(stderr, "atg_create_element_label failed\n");
+	atg_element *spin=atg_create_element_spinner(ATG_SPINNER_RIGHTCLICK_STEP10, 0, 100, 1, 10, "%03d", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+	if(spin)
+	{
+		if(atg_pack_element(mainbox, spin))
+			perror("atg_pack_element");
+	}
+	else
+		fprintf(stderr, "atg_create_element_spinner failed\n");
 	atg_element *go=atg_create_element_button("Go!", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(go)
 	{
@@ -150,12 +158,30 @@ int main(void)
 						}
 						else
 						{
-							fprintf(stderr, "trigger->e not recognised!\n");
+							fprintf(stderr, "trigger.e not recognised!\n");
 						}
 					}
 					else
 					{
-						fprintf(stderr, "trigger->e==NULL!\n");
+						fprintf(stderr, "trigger.e==NULL!\n");
+					}
+				break;
+				case ATG_EV_VALUE:;
+					atg_ev_value value=e.event.value;
+					if(value.e)
+					{
+						if(value.e==spin)
+						{
+							printf("Spinner value set to %d\n", value.value);
+						}
+						else
+						{
+							fprintf(stderr, "value.e not recognised!\n");
+						}
+					}
+					else
+					{
+						fprintf(stderr, "value.e==NULL!\n");
 					}
 				break;
 				default:

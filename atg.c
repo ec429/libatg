@@ -313,6 +313,29 @@ SDL_Surface *atg_render_spinner(const atg_element *e)
 	return(rv);
 }
 
+SDL_Surface *atg_render_toggle(const atg_element *e)
+{
+	if(!e) return(NULL);
+	if(!((e->type==ATG_TOGGLE)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_toggle *t=e->elem.toggle;
+	if(!t) return(NULL);
+	atg_box *b=t->content;
+	if(b)
+	{
+		b->bgcolour=t->state?t->fgcolour:t->bgcolour;
+		atg_element *le=b->nelems?b->elems[0]:NULL;
+		if(le&&le->type==ATG_LABEL)
+		{
+			atg_label *l=le->elem.label;
+			if(l)
+			{
+				l->colour=t->state?t->bgcolour:t->fgcolour;
+			}
+		}
+	}
+	return(atg_render_button(&(atg_element){.type=ATG_BUTTON, .w=e->w, .h=e->h, .elem.button=&(atg_button){.fgcolour=t->state?t->bgcolour:t->fgcolour, .content=t->content}}));
+}
+
 SDL_Surface *atg_render_element(const atg_element *e)
 {
 	if(!e) return(NULL);
@@ -329,6 +352,8 @@ SDL_Surface *atg_render_element(const atg_element *e)
 			return(atg_render_button(e));
 		case ATG_SPINNER:
 			return(atg_render_spinner(e));
+		case ATG_TOGGLE:
+			return(atg_render_toggle(e));
 		case ATG_CUSTOM:
 			if(e->render_callback)
 				return(e->render_callback(e));
@@ -506,6 +531,19 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 				}
 				if(s->value!=oldval)
 					atg__push_event(list, (atg_event){.type=ATG_EV_VALUE, .event.value=(atg_ev_value){.e=element, .value=s->value}});
+			}
+			break;
+			case ATG_TOGGLE:
+			{
+				atg_ev_toggle toggle;
+				toggle.e=element;
+				toggle.button=button.button;
+				atg_toggle *t=element?element->elem.toggle:NULL;
+				if(t)
+					toggle.state=(t->state=!t->state);
+				else
+					toggle.state=false;
+				atg__push_event(list, (atg_event){.type=ATG_EV_TOGGLE, .event.toggle=toggle});
 			}
 			break;
 			case ATG_CUSTOM:
@@ -772,6 +810,44 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 	return(rv);
 }
 
+atg_toggle *atg_create_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_toggle *rv=malloc(sizeof(atg_button));
+	if(rv)
+	{
+		rv->fgcolour=fgcolour;
+		rv->bgcolour=bgcolour;
+		rv->content=atg_create_box(ATG_BOX_PACK_HORIZONTAL, state?fgcolour:bgcolour);
+		if(rv->content)
+		{
+			atg_element *l=atg_create_element_label(label, 12, state?bgcolour:fgcolour);
+			if(l)
+			{
+				if(atg_pack_element(rv->content, l))
+				{
+					atg_free_element(l);
+					atg_free_box_box(rv->content);
+					free(rv);
+					return(NULL);
+				}
+			}
+			else
+			{
+				atg_free_box_box(rv->content);
+				free(rv);
+				return(NULL);
+			}
+		}
+		else
+		{
+			free(rv);
+			return(NULL);
+		}
+	}
+	rv->state=state;
+	return(rv);
+}
+
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
@@ -879,6 +955,28 @@ atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int
 	rv->render_callback=atg_render_spinner;
 	rv->match_click_callback=NULL;
 	rv->free_callback=atg_free_spinner;
+	return(rv);
+}
+
+atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_toggle *t=atg_create_toggle(label, state, fgcolour, bgcolour);
+	if(!t)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type=ATG_TOGGLE;
+	rv->elem.toggle=t;
+	rv->clickable=false; /* because it generates ATG_EV_TOGGLE events instead */
+	rv->hidden=false;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_toggle;
+	rv->match_click_callback=NULL;
+	rv->free_callback=atg_free_toggle;
 	return(rv);
 }
 
@@ -1036,6 +1134,17 @@ void atg_free_spinner(atg_element *e)
 	free(spinner);
 }
 
+void atg_free_toggle(atg_element *e)
+{
+	if(!e) return;
+	atg_toggle *t=e->elem.toggle;
+	if(t)
+	{
+		atg_free_box_box(t->content);
+	}
+	free(t);
+}
+
 void atg_free_element(atg_element *element)
 {
 	if(element)
@@ -1056,6 +1165,9 @@ void atg_free_element(atg_element *element)
 			break;
 			case ATG_SPINNER:
 				atg_free_spinner(element);
+			break;
+			case ATG_TOGGLE:
+				atg_free_toggle(element);
 			break;
 			case ATG_CUSTOM:
 				if(element->free_callback)

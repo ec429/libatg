@@ -15,6 +15,7 @@ SDL_Surface *atg_render_label(const atg_element *e);
 SDL_Surface *atg_render_image(const atg_element *e);
 SDL_Surface *atg_render_button(const atg_element *e);
 SDL_Surface *atg_render_spinner(const atg_element *e);
+SDL_Surface *atg_render_toggle(const atg_element *e);
 
 /* Event lists */
 typedef struct atg__event_list

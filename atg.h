@@ -36,6 +36,7 @@ typedef enum
 	ATG_IMAGE,
 	ATG_BUTTON,
 	ATG_SPINNER,
+	ATG_TOGGLE,
 	
 	ATG_CUSTOM,
 }
@@ -96,6 +97,14 @@ atg_spinner;
 
 typedef struct
 {
+	bool state;
+	atg_colour fgcolour, bgcolour;
+	atg_box *content;
+}
+atg_toggle;
+
+typedef struct
+{
 	SDL_Surface *surface;
 	atg_box *box;
 }
@@ -120,6 +129,7 @@ typedef struct atg_element
 		atg_image *image;
 		atg_button *button;
 		atg_spinner *spinner;
+		atg_toggle *toggle;
 	} elem;
 	bool clickable;
 	bool hidden;
@@ -166,7 +176,7 @@ typedef struct
 {
 	atg_element *e; /* the element which was toggled */
 	atg_mousebutton button;
-	bool active; /* the new state of the toggleable */
+	bool state; /* the new state of the toggleable */
 }
 atg_ev_toggle;
 
@@ -201,12 +211,14 @@ atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour 
 atg_image *atg_create_image(SDL_Surface *img);
 atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
 atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
+atg_toggle *atg_create_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_element *atg_create_element_image(SDL_Surface *img);
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
+atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 
 int atg_pack_element(atg_box *box, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);
@@ -218,5 +230,6 @@ void atg_free_label(atg_element *e);
 void atg_free_image(atg_element *e);
 void atg_free_button(atg_element *e);
 void atg_free_spinner(atg_element *e);
+void atg_free_toggle(atg_element *e);
 
 void atg_free_element(atg_element *element);

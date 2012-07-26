@@ -133,6 +133,8 @@ typedef struct atg_element
 	} elem;
 	bool clickable;
 	bool hidden;
+	bool cache;
+	SDL_Surface *cached;
 	void *userdata; /* normally NULL; is not freed by atg_free_element() */
 }
 atg_element;

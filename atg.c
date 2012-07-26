@@ -336,31 +336,49 @@ SDL_Surface *atg_render_toggle(const atg_element *e)
 	return(atg_render_button(&(atg_element){.type=ATG_BUTTON, .w=e->w, .h=e->h, .elem.button=&(atg_button){.fgcolour=t->state?t->bgcolour:t->fgcolour, .content=t->content}}));
 }
 
-SDL_Surface *atg_render_element(const atg_element *e)
+SDL_Surface *atg_render_element(atg_element *e)
 {
 	if(!e) return(NULL);
 	if(e->hidden) return(NULL);
+	if(e->cache&&e->cached)
+	{
+		e->cached->refcount++;
+		return(e->cached);
+	}
+	SDL_Surface *rv=NULL;
 	switch(e->type)
 	{
 		case ATG_BOX:
-			return(atg_render_box(e));
+			rv=atg_render_box(e);
+		break;
 		case ATG_LABEL:
-			return(atg_render_label(e));
+			rv=atg_render_label(e);
+		break;
 		case ATG_IMAGE:
-			return(atg_render_image(e));
+			rv=atg_render_image(e);
+		break;
 		case ATG_BUTTON:
-			return(atg_render_button(e));
+			rv=atg_render_button(e);
+		break;
 		case ATG_SPINNER:
-			return(atg_render_spinner(e));
+			rv=atg_render_spinner(e);
+		break;
 		case ATG_TOGGLE:
-			return(atg_render_toggle(e));
+			rv=atg_render_toggle(e);
+		break;
 		case ATG_CUSTOM:
 			if(e->render_callback)
-				return(e->render_callback(e));
-			/* fallthrough */
+				rv=e->render_callback(e);
+		break;
 		default:
-			return(NULL);
+		break;
 	}
+	if(e->cache)
+	{
+		e->cached=rv;
+		if(rv) rv->refcount++;
+	}
+	return(rv);
 }
 
 void atg_flip(atg_canvas *canvas)
@@ -863,6 +881,8 @@ atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
 	rv->elem.box=b;
 	rv->clickable=false;
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_box;
 	rv->match_click_callback=NULL;
@@ -885,6 +905,8 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->elem.label=l;
 	rv->clickable=false;
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_label;
 	rv->match_click_callback=NULL;
@@ -907,6 +929,8 @@ atg_element *atg_create_element_image(SDL_Surface *img)
 	rv->elem.image=i;
 	rv->clickable=false;
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_image;
 	rv->match_click_callback=NULL;
@@ -929,6 +953,8 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->elem.button=b;
 	rv->clickable=false; /* because it generates ATG_EV_TRIGGER events instead */
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_button;
 	rv->match_click_callback=NULL;
@@ -951,6 +977,8 @@ atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int
 	rv->elem.spinner=s;
 	rv->clickable=false; /* because it generates ATG_EV_VALUE events instead */
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_spinner;
 	rv->match_click_callback=NULL;
@@ -973,6 +1001,8 @@ atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour
 	rv->elem.toggle=t;
 	rv->clickable=false; /* because it generates ATG_EV_TOGGLE events instead */
 	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_toggle;
 	rv->match_click_callback=NULL;
@@ -1042,6 +1072,7 @@ atg_element *atg_copy_element(const atg_element *e)
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
 	*rv=*e;
+	rv->cached=NULL;
 	switch(rv->type)
 	{
 		case ATG_BOX:
@@ -1182,5 +1213,6 @@ void atg_free_element(atg_element *element)
 			break;
 		}
 	}
+	SDL_FreeSurface(element->cached);
 	free(element);
 }

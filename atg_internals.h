@@ -7,7 +7,7 @@
 	atg_internals.h: definitions for making custom widgets
 */
 
-SDL_Surface *atg_render_element(const atg_element *e);
+SDL_Surface *atg_render_element(atg_element *e);
 
 /* Standard renderers */
 SDL_Surface *atg_render_box(const atg_element *e); /* Most custom widgets will be based on a box */

@@ -255,6 +255,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 			append_char(&newtext, &ntl, &nti, (char)0x90);
 			append_char(&newtext, &ntl, &nti, (char)0x80|*p);
 		}
+		p++;
 	}
 	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], newtext, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
 	free(newtext);

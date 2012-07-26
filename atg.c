@@ -14,6 +14,12 @@
 #include <string.h>
 #include <SDL_ttf.h>
 
+char *fgetl(FILE *); // gets a line of string data; returns a malloc-like pointer
+char *slurp(FILE *); // gets an entire file of string data; returns a malloc-like pointer
+void init_char(char **buf, size_t *l, size_t *i); // initialises a string buffer in heap.  *buf becomes a malloc-like pointer
+void append_char(char **buf, size_t *l, size_t *i, char c); // adds a character to a string buffer in heap (and realloc()s if needed)
+void append_str(char **buf, size_t *l, size_t *i, const char *str); // adds a string to a string buffer in heap (and realloc()s if needed)
+
 #define MAXFONTSIZE	24
 bool ttfinit=false;
 const char *monofont="/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf";
@@ -231,13 +237,29 @@ SDL_Surface *atg_render_label(const atg_element *e)
 	if(!((e->type==ATG_LABEL)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_label *l=e->elem.label;
 	if(!l) return(NULL);
+	if(!l->text) return(NULL);
 	if((l->fontsize>MAXFONTSIZE)||!l->fontsize) return(NULL);
 	if(!monottf[l->fontsize-1])
 	{
 		if(!(monottf[l->fontsize-1]=TTF_OpenFont(monofont, l->fontsize)))
 			return(NULL);
 	}
-	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], l->text, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
+	char *newtext; size_t ntl, nti;
+	init_char(&newtext, &ntl, &nti);
+	const char *p=l->text;
+	while(*p)
+	{
+		if(*p==127) append_str(&newtext, &ntl, &nti, "␡");
+		else if(*p>=32) append_char(&newtext, &ntl, &nti, *p);
+		else
+		{
+			append_char(&newtext, &ntl, &nti, (char)0xe2);
+			append_char(&newtext, &ntl, &nti, (char)0x90);
+			append_char(&newtext, &ntl, &nti, (char)0x80|*p);
+		}
+	}
+	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], newtext, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
+	free(newtext);
 	if(e->w||e->h)
 	{
 		SDL_Surface *rv=atg_resize_surface(text, e);
@@ -597,7 +619,7 @@ atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour 
 	atg_label *rv=malloc(sizeof(atg_label));
 	if(rv)
 	{
-		rv->text=strdup(text);
+		rv->text=text?strdup(text):NULL;
 		rv->fontsize=fontsize;
 		rv->colour=colour;
 	}
@@ -609,7 +631,8 @@ atg_image *atg_create_image(SDL_Surface *img)
 	atg_image *rv=malloc(sizeof(atg_image));
 	if(rv)
 	{
-		(rv->data=img)->refcount++;
+		if((rv->data=img))
+			img->refcount++;
 	}
 	return(rv);
 }
@@ -1069,4 +1092,87 @@ void atg_free_element(atg_element *element)
 		}
 	}
 	free(element);
+}
+
+void append_char(char **buf, size_t *l, size_t *i, char c)
+{
+	if(*buf)
+	{
+		(*buf)[(*i)++]=c;
+	}
+	else
+	{
+		init_char(buf, l, i);
+		append_char(buf, l, i, c);
+	}
+	char *nbuf=*buf;
+	if((*i)>=(*l))
+	{
+		*l=*i*2;
+		nbuf=realloc(*buf, *l);
+	}
+	if(nbuf)
+	{
+		*buf=nbuf;
+		(*buf)[*i]=0;
+	}
+	else
+	{
+		free(*buf);
+		init_char(buf, l, i);
+	}
+}
+
+void append_str(char **buf, size_t *l, size_t *i, const char *str)
+{
+	while(str && *str) // not the most tremendously efficient implementation, but conceptually simple at least
+	{
+		append_char(buf, l, i, *str++);
+	}
+}
+
+void init_char(char **buf, size_t *l, size_t *i)
+{
+	*l=80;
+	*buf=malloc(*l);
+	(*buf)[0]=0;
+	*i=0;
+}
+
+char * fgetl(FILE *fp)
+{
+	char * lout;
+	size_t l,i;
+	init_char(&lout, &l, &i);
+	signed int c;
+	while(!feof(fp))
+	{
+		c=fgetc(fp);
+		if((c==EOF)||(c=='\n'))
+			break;
+		if(c!=0)
+		{
+			append_char(&lout, &l, &i, c);
+		}
+	}
+	return(lout);
+}
+
+char *slurp(FILE *fp)
+{
+	char *fout;
+	size_t l,i;
+	init_char(&fout, &l, &i);
+	signed int c;
+	while(!feof(fp))
+	{
+		c=fgetc(fp);
+		if(c==EOF)
+			break;
+		if(c!=0)
+		{
+			append_char(&fout, &l, &i, c);
+		}
+	}
+	return(fout);
 }

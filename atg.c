@@ -14,11 +14,9 @@
 #include <string.h>
 #include <SDL_ttf.h>
 
-char *fgetl(FILE *); // gets a line of string data; returns a malloc-like pointer
-char *slurp(FILE *); // gets an entire file of string data; returns a malloc-like pointer
-void init_char(char **buf, size_t *l, size_t *i); // initialises a string buffer in heap.  *buf becomes a malloc-like pointer
-void append_char(char **buf, size_t *l, size_t *i, char c); // adds a character to a string buffer in heap (and realloc()s if needed)
-void append_str(char **buf, size_t *l, size_t *i, const char *str); // adds a string to a string buffer in heap (and realloc()s if needed)
+static void init_char(char **buf, size_t *l, size_t *i); // initialises a string buffer in heap.  *buf becomes a malloc-like pointer
+static void append_char(char **buf, size_t *l, size_t *i, char c); // adds a character to a string buffer in heap (and realloc()s if needed)
+static void append_str(char **buf, size_t *l, size_t *i, const char *str); // adds a string to a string buffer in heap (and realloc()s if needed)
 
 #define MAXFONTSIZE	24
 bool ttfinit=false;
@@ -1137,42 +1135,4 @@ void init_char(char **buf, size_t *l, size_t *i)
 	*buf=malloc(*l);
 	(*buf)[0]=0;
 	*i=0;
-}
-
-char * fgetl(FILE *fp)
-{
-	char * lout;
-	size_t l,i;
-	init_char(&lout, &l, &i);
-	signed int c;
-	while(!feof(fp))
-	{
-		c=fgetc(fp);
-		if((c==EOF)||(c=='\n'))
-			break;
-		if(c!=0)
-		{
-			append_char(&lout, &l, &i, c);
-		}
-	}
-	return(lout);
-}
-
-char *slurp(FILE *fp)
-{
-	char *fout;
-	size_t l,i;
-	init_char(&fout, &l, &i);
-	signed int c;
-	while(!feof(fp))
-	{
-		c=fgetc(fp);
-		if(c==EOF)
-			break;
-		if(c!=0)
-		{
-			append_char(&fout, &l, &i, c);
-		}
-	}
-	return(fout);
 }

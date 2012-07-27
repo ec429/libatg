@@ -299,6 +299,16 @@ SDL_Surface *atg_render_spinner(const atg_element *e)
 	if(!((e->type==ATG_SPINNER)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_spinner *s=e->elem.spinner;
 	if(!s) return(NULL);
+	atg_box *b=s->content;
+	if(!b) return(NULL);
+	if(b->nelems&&b->elems[0]&&b->elems[0]->type==ATG_LABEL)
+	{
+		atg_label *l=b->elems[0]->elem.label;
+		free(l->text);
+		l->text=malloc(32);
+		if(l->text)
+			snprintf(l->text, 32, s->fmt, s->value);
+	}
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=s->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w, content->h, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
@@ -539,14 +549,6 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 				}
 				if(s->value>s->maxval) s->value=s->maxval;
 				if(s->value<s->minval) s->value=s->minval;
-				if(b->elems[0]&&b->elems[0]->type==ATG_LABEL)
-				{
-					atg_label *l=b->elems[0]->elem.label;
-					free(l->text);
-					l->text=malloc(32);
-					if(l->text)
-						snprintf(l->text, 32, s->fmt, s->value);
-				}
 				if(s->value!=oldval)
 					atg__push_event(list, (atg_event){.type=ATG_EV_VALUE, .event.value=(atg_ev_value){.e=element, .value=s->value}});
 			}

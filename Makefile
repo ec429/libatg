@@ -14,11 +14,17 @@ all: libatg.la test widget
 install: libatg.la
 	libtool --mode=install install -D -m0755 libatg.la $(PREFIX)/lib/libatg.la
 
+uninstall:
+	libtool --mode=uninstall /bin/rm -f $(PREFIX)/lib/libatg.la
+
+clean:
+	rm -f libatg.la $(LOBJS) test widget
+
 test: test.c $(INCLUDES) libatg.la
-	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test -L. -latg $(SDL)
+	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test -latg $(SDL)
 
 widget: widget.c $(INCLUDES) libatg.la atg_internals.h
-	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget -L. -latg $(SDL)
+	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget -latg $(SDL)
 
 libatg.la: $(LOBJS)
 	libtool --mode=link $(CC) -o $@ $(LOBJS) -rpath $(PREFIX)/lib -version-info $(LVERSION)

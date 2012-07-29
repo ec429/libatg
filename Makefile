@@ -4,18 +4,28 @@ CC := gcc
 CFLAGS := -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DPREFIX=\"$(PREFIX)\"
 SDL := `sdl-config --libs` -lSDL_ttf
 SDLFLAGS := `sdl-config --cflags`
+OBJS := atg.o
+LOBJS := $(OBJS:.o=.lo)
+INCLUDES := $(OBJS:.o=.h)
+LVERSION := 0:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
-all: atg.o test widget
+all: libatg.la test widget
 
-test: test.c atg.h atg.o
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test atg.o $(SDL)
+install: libatg.la
+	libtool --mode=install install -D -m0755 libatg.la $(PREFIX)/lib/libatg.la
 
-widget: widget.c atg.h atg.o atg_internals.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget atg.o $(SDL)
+test: test.c $(INCLUDES) libatg.la
+	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test -L. -latg $(SDL)
 
-atg.o: atg.c atg.h atg_internals.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -o $@ -c $<
+widget: widget.c $(INCLUDES) libatg.la atg_internals.h
+	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget -L. -latg $(SDL)
 
-%.o: %.c %.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
+libatg.la: $(LOBJS)
+	libtool --mode=link $(CC) -o $@ $(LOBJS) -rpath $(PREFIX)/lib -version-info $(LVERSION)
+
+atg.lo: atg.c $(INCLUDES) atg_internals.h
+	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<
+
+%.lo: %.c %.h
+	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 

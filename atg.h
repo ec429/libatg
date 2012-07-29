@@ -209,12 +209,6 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas);
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
 int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h);
-atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
-atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour);
-atg_image *atg_create_image(SDL_Surface *img);
-atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
-atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
-atg_toggle *atg_create_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour);

@@ -3,10 +3,7 @@
 	Copyright (C) 2012 Edward Cree
 	
 	See atg.h for license information
-	atg.c: provides all the actual functions
-	
-	TODO: this really ought to be split up into separate files.
-		Perhaps one file for 'plumbing' and then one for each widget.
+	atg.c: provides everything not done elsewhere (TODO: decide what belongs here)
 */
 
 #include "atg.h"
@@ -346,51 +343,6 @@ SDL_Surface *atg_render_toggle(const atg_element *e)
 	return(atg_render_button(&(atg_element){.type=ATG_BUTTON, .w=e->w, .h=e->h, .elem.button=&(atg_button){.fgcolour=t->state?t->bgcolour:t->fgcolour, .content=t->content}}));
 }
 
-SDL_Surface *atg_render_element(atg_element *e)
-{
-	if(!e) return(NULL);
-	if(e->hidden) return(NULL);
-	if(e->cache&&e->cached)
-	{
-		e->cached->refcount++;
-		return(e->cached);
-	}
-	SDL_Surface *rv=NULL;
-	switch(e->type)
-	{
-		case ATG_BOX:
-			rv=atg_render_box(e);
-		break;
-		case ATG_LABEL:
-			rv=atg_render_label(e);
-		break;
-		case ATG_IMAGE:
-			rv=atg_render_image(e);
-		break;
-		case ATG_BUTTON:
-			rv=atg_render_button(e);
-		break;
-		case ATG_SPINNER:
-			rv=atg_render_spinner(e);
-		break;
-		case ATG_TOGGLE:
-			rv=atg_render_toggle(e);
-		break;
-		case ATG_CUSTOM:
-			if(e->render_callback)
-				rv=e->render_callback(e);
-		break;
-		default:
-		break;
-	}
-	if(e->cache)
-	{
-		e->cached=rv;
-		if(rv) rv->refcount++;
-	}
-	return(rv);
-}
-
 void atg_flip(atg_canvas *canvas)
 {
 	if(!canvas) return;
@@ -402,193 +354,123 @@ void atg_flip(atg_canvas *canvas)
 	SDL_Flip(canvas->surface);
 }
 
-int atg__push_event(struct atg_event_list *list, atg_event event)
+void atg_click_box(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
-	if(!list) return(1);
-	if(list->last)
+	atg_box *b=element->elem.box;
+	if(!b->elems) return;
+	for(unsigned int i=0;i<b->nelems;i++)
+		atg__match_click_recursive(list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
+}
+
+void atg_click_button(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, __attribute__((unused)) unsigned int xoff, __attribute__((unused)) unsigned int yoff)
+{
+	atg_ev_trigger trigger;
+	trigger.e=element;
+	trigger.button=button.button;
+	atg__push_event(list, (atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
+}
+
+void atg_click_spinner(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
+{
+	atg_spinner *s=element->elem.spinner;
+	if(!s) return;
+	atg_box *b=s->content;
+	if(!b) return;
+	if(!b->elems) return;
+	int oldval=s->value;
+	if(button.button==ATG_MB_SCROLLDN)
 	{
-		if(!(list->last->next=malloc(sizeof(atg__event_list))))
-			return(1);
-		*(list->last=list->last->next)=(atg__event_list){.event=event, .next=NULL};
-		return(0);
+		s->value-=s->step;
 	}
-	else if(list->list)
+	else if(button.button==ATG_MB_SCROLLUP)
 	{
-		list->last=list->list;
-		while(list->last->next) list->last=list->last->next;
-		if(!(list->last->next=malloc(sizeof(atg__event_list))))
-			return(1);
-		*(list->last=list->last->next)=(atg__event_list){.event=event, .next=NULL};
-		return(0);
+		s->value+=s->step;
 	}
 	else
 	{
-		if(!(list->last=list->list=malloc(sizeof(atg__event_list))))
-			return(1);
-		*list->last=(atg__event_list){.event=event, .next=NULL};
-		return(0);
-	}
-}
-
-static struct atg_event_list atg__ev_list={.list=NULL, .last=NULL};
-
-void atg__match_click_recursive(struct atg_event_list *list, atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
-{
-	if(!element) return;
-	if(
-		(button.x>=element->display.x+xoff)
-		&&(button.x<element->display.x+xoff+element->display.w)
-		&&(button.y>=element->display.y+yoff)
-		&&(button.y<element->display.y+yoff+element->display.h)
-	)
-	{
-		if(element->clickable)
+		struct atg_event_list sub_list={.list=NULL, .last=NULL};
+		for(unsigned int i=0;i<b->nelems;i++)
+			atg__match_click_recursive(&sub_list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
+		while(sub_list.list)
 		{
-			atg_ev_click click;
-			click.e=element;
-			click.pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
-			click.button=button.button;
-			atg__push_event(list, (atg_event){.type=ATG_EV_CLICK, .event.click=click});
-		}
-		switch(element->type)
-		{
-			case ATG_BOX:
+			atg_event event=sub_list.list->event;
+			if(event.type==ATG_EV_TRIGGER)
 			{
-				atg_box *b=element->elem.box;
-				if(!b->elems) return;
-				for(unsigned int i=0;i<b->nelems;i++)
-					atg__match_click_recursive(list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
-			}
-			break;
-			case ATG_BUTTON:
-			{
-				atg_ev_trigger trigger;
-				trigger.e=element;
-				trigger.button=button.button;
-				atg__push_event(list, (atg_event){.type=ATG_EV_TRIGGER, .event.trigger=trigger});
-			}
-			break;
-			case ATG_SPINNER:
-			{
-				atg_spinner *s=element->elem.spinner;
-				if(!s) return;
-				atg_box *b=s->content;
-				if(!b) return;
-				if(!b->elems) return;
-				int oldval=s->value;
-				if(button.button==ATG_MB_SCROLLDN)
+				if((event.event.trigger.button==ATG_MB_LEFT)||(event.event.trigger.button==ATG_MB_RIGHT))
 				{
-					s->value-=s->step;
-				}
-				else if(button.button==ATG_MB_SCROLLUP)
-				{
-					s->value+=s->step;
-				}
-				else
-				{
-					struct atg_event_list sub_list={.list=NULL, .last=NULL};
-					for(unsigned int i=0;i<b->nelems;i++)
-						atg__match_click_recursive(&sub_list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
-					while(sub_list.list)
+					atg_element *e=event.event.trigger.e;
+					if(e&&e->type==ATG_BUTTON)
 					{
-						atg_event event=sub_list.list->event;
-						if(event.type==ATG_EV_TRIGGER)
+						atg_button *b=e->elem.button;
+						if(b)
 						{
-							if((event.event.trigger.button==ATG_MB_LEFT)||(event.event.trigger.button==ATG_MB_RIGHT))
+							atg_box *box=b->content;
+							if(box&&box->nelems&&box->elems)
 							{
-								atg_element *e=event.event.trigger.e;
-								if(e&&e->type==ATG_BUTTON)
+								atg_element *e=box->elems[0];
+								if(e&&e->type==ATG_LABEL)
 								{
-									atg_button *b=e->elem.button;
-									if(b)
+									atg_label *l=e->elem.label;
+									if(l&&l->text)
 									{
-										atg_box *box=b->content;
-										if(box&&box->nelems&&box->elems)
+										if(strcmp(l->text, "+")==0)
 										{
-											atg_element *e=box->elems[0];
-											if(e&&e->type==ATG_LABEL)
+											if(event.event.trigger.button==ATG_MB_RIGHT)
 											{
-												atg_label *l=e->elem.label;
-												if(l&&l->text)
-												{
-													if(strcmp(l->text, "+")==0)
-													{
-														if(event.event.trigger.button==ATG_MB_RIGHT)
-														{
-															if(s->flags&ATG_SPINNER_RIGHTCLICK_TIMES2)
-																s->value*=2;
-															else
-																s->value+=10*s->step;
-														}
-														else
-															s->value+=s->step;
-													}
-													else if(strcmp(l->text, "-")==0)
-													{
-														if(event.event.trigger.button==ATG_MB_RIGHT)
-														{
-															if(s->flags&ATG_SPINNER_RIGHTCLICK_TIMES2)
-																s->value/=2;
-															else
-																s->value-=10*s->step;
-														}
-														else
-															s->value-=s->step;
-													}
-												}
+												if(s->flags&ATG_SPINNER_RIGHTCLICK_TIMES2)
+													s->value*=2;
+												else
+													s->value+=10*s->step;
 											}
+											else
+												s->value+=s->step;
+										}
+										else if(strcmp(l->text, "-")==0)
+										{
+											if(event.event.trigger.button==ATG_MB_RIGHT)
+											{
+												if(s->flags&ATG_SPINNER_RIGHTCLICK_TIMES2)
+													s->value/=2;
+												else
+													s->value-=10*s->step;
+											}
+											else
+												s->value-=s->step;
 										}
 									}
 								}
 							}
 						}
-						atg__event_list *next=sub_list.list->next;
-						free(sub_list.list);
-						sub_list.list=next;
 					}
 				}
-				if(s->value>s->maxval) s->value=s->maxval;
-				if(s->value<s->minval) s->value=s->minval;
-				if(s->value!=oldval)
-					atg__push_event(list, (atg_event){.type=ATG_EV_VALUE, .event.value=(atg_ev_value){.e=element, .value=s->value}});
 			}
-			break;
-			case ATG_TOGGLE:
-			{
-				atg_ev_toggle toggle;
-				toggle.e=element;
-				toggle.button=button.button;
-				atg_toggle *t=element?element->elem.toggle:NULL;
-				if(t)
-					toggle.state=(t->state=!t->state);
-				else
-					toggle.state=false;
-				atg__push_event(list, (atg_event){.type=ATG_EV_TOGGLE, .event.toggle=toggle});
-			}
-			break;
-			case ATG_CUSTOM:
-				if(element->match_click_callback)
-					element->match_click_callback(list, element, button, xoff, yoff);
-				/* fallthrough */
-			default:
-				/* ignore */
-			break;
+			atg__event_list *next=sub_list.list->next;
+			free(sub_list.list);
+			sub_list.list=next;
 		}
 	}
+	if(s->value>s->maxval) s->value=s->maxval;
+	if(s->value<s->minval) s->value=s->minval;
+	if(s->value!=oldval)
+		atg__push_event(list, (atg_event){.type=ATG_EV_VALUE, .event.value=(atg_ev_value){.e=element, .value=s->value}});
 }
 
-void atg__match_click(struct atg_event_list *list, atg_canvas *canvas, SDL_MouseButtonEvent button)
+void atg_click_toggle(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, __attribute__((unused)) unsigned int xoff, __attribute__((unused)) unsigned int yoff)
 {
-	if(!canvas) return;
-	if(!canvas->box) return;
-	atg_box *b=canvas->box;
-	if(!b->elems) return;
-	for(unsigned int i=0;i<b->nelems;i++)
-		atg__match_click_recursive(list, b->elems[i], button, 0, 0);
+	atg_ev_toggle toggle;
+	toggle.e=element;
+	toggle.button=button.button;
+	atg_toggle *t=element?element->elem.toggle:NULL;
+	if(t)
+		toggle.state=(t->state=!t->state);
+	else
+		toggle.state=false;
+	atg__push_event(list, (atg_event){.type=ATG_EV_TOGGLE, .event.toggle=toggle});
 }
 
 int atg_poll_event(atg_event *event, atg_canvas *canvas)
 {
+	static struct atg_event_list atg__ev_list={.list=NULL, .last=NULL};
 	if(!event) return(atg__ev_list.list?1:SDL_PollEvent(NULL));
 	if(!canvas) return(0);
 	SDL_Event s;
@@ -1025,8 +907,6 @@ int atg_pack_element(atg_box *box, atg_element *elem)
 	return(1);
 }
 
-atg_element *atg_copy_element(const atg_element *e);
-
 atg_box *atg_copy_box(const atg_box *b)
 {
 	if(!b) return(NULL);
@@ -1068,31 +948,25 @@ atg_button *atg_copy_button(const atg_button *b)
 	return(rv);
 }
 
-atg_element *atg_copy_element(const atg_element *e)
+atg_spinner *atg_copy_spinner(const atg_spinner *s)
 {
-	if(!e) return(NULL);
-	atg_element *rv=malloc(sizeof(atg_element));
+	if(!s) return(NULL);
+	atg_spinner *rv=malloc(sizeof(atg_spinner));
 	if(!rv) return(NULL);
-	*rv=*e;
-	rv->cached=NULL;
-	switch(rv->type)
-	{
-		case ATG_BOX:
-			rv->elem.box=atg_copy_box(e->elem.box);
-			return(rv);
-		case ATG_LABEL:
-			rv->elem.label=atg_copy_label(e->elem.label);
-			return(rv);
-		case ATG_IMAGE:
-			rv->elem.image=atg_copy_image(e->elem.image);
-			return(rv);
-		case ATG_BUTTON:
-			rv->elem.button=atg_copy_button(e->elem.button);
-			return(rv);
-		default:
-			free(rv);
-			return(NULL);
-	}
+	*rv=*s;
+	rv->content=s->content?atg_copy_box(s->content):NULL;
+	rv->fmt=s->fmt?strdup(s->fmt):NULL;
+	return(rv);
+}
+
+atg_toggle *atg_copy_toggle(const atg_toggle *t)
+{
+	if(!t) return(NULL);
+	atg_toggle *rv=malloc(sizeof(atg_toggle));
+	if(!rv) return(NULL);
+	*rv=*t;
+	rv->content=t->content?atg_copy_box(t->content):NULL;
+	return(rv);
 }
 
 void atg_free_canvas(atg_canvas *canvas)
@@ -1176,45 +1050,4 @@ void atg_free_toggle(atg_element *e)
 		atg_free_box_box(t->content);
 	}
 	free(t);
-}
-
-void atg_free_element(atg_element *element)
-{
-	if(element)
-	{
-		switch(element->type)
-		{
-			case ATG_BOX:
-				atg_free_box(element);
-			break;
-			case ATG_LABEL:
-				atg_free_label(element);
-			break;
-			case ATG_IMAGE:
-				atg_free_image(element);
-			break;
-			case ATG_BUTTON:
-				atg_free_button(element);
-			break;
-			case ATG_SPINNER:
-				atg_free_spinner(element);
-			break;
-			case ATG_TOGGLE:
-				atg_free_toggle(element);
-			break;
-			case ATG_CUSTOM:
-				if(element->free_callback)
-				{
-					element->free_callback(element);
-					break;
-				}
-				/* fallthrough */
-			default:
-				/* Bad things */
-				fprintf(stderr, "Don't know how to free element of type %d, very bad things!\n", element->type);
-			break;
-		}
-	}
-	SDL_FreeSurface(element->cached);
-	free(element);
 }

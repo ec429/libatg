@@ -4,9 +4,9 @@ CC := gcc
 CFLAGS := -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DPREFIX=\"$(PREFIX)\"
 SDL := `sdl-config --libs` -lSDL_ttf
 SDLFLAGS := `sdl-config --cflags`
-OBJS := atg.o
+OBJS := atg.o plumbing.o
 LOBJS := $(OBJS:.o=.lo)
-INCLUDES := $(OBJS:.o=.h)
+INCLUDES := atg.h atg_internals.h
 LVERSION := 0:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
 all: libatg.la test widget
@@ -23,16 +23,19 @@ uninstall:
 clean:
 	rm -f libatg.la $(LOBJS) test widget
 
-test: test.c $(INCLUDES) libatg.la
+test: test.c atg.h libatg.la
 	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test -latg $(SDL)
 
-widget: widget.c $(INCLUDES) libatg.la atg_internals.h
+widget: widget.c libatg.la atg.h atg_internals.h
 	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget -latg $(SDL)
 
 libatg.la: $(LOBJS)
 	libtool --mode=link $(CC) -o $@ $(LOBJS) -rpath $(PREFIX)/lib -version-info $(LVERSION)
 
-atg.lo: atg.c $(INCLUDES) atg_internals.h
+atg.lo: atg.c $(INCLUDES)
+	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<
+
+plumbing.lo: plumbing.c $(INCLUDES)
 	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<
 
 %.lo: %.c %.h

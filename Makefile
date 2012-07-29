@@ -12,9 +12,9 @@ LVERSION := 0:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.ht
 all: libatg.la test widget
 
 install: libatg.la
-	libtool --mode=install install -D -m0755 libatg.la $(PREFIX)/lib/libatg.la
 	libtool --mode=install install -D -m0644 atg.h $(PREFIX)/include/atg.h
 	libtool --mode=install install -D -m0644 atg_internals.h $(PREFIX)/include/atg_internals.h
+	libtool --mode=install install -D -m0644 libatg.la $(PREFIX)/lib/libatg.la
 	-ldconfig
 
 uninstall:

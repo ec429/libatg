@@ -38,7 +38,7 @@ typedef enum
 	ATG_SPINNER,
 	ATG_TOGGLE,
 	
-	ATG_CUSTOM,
+	ATG_CUSTOM=255,
 }
 atg_type;
 

@@ -1,3 +1,10 @@
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	w_box.c: implements the BOX widget
+*/
 #include "atg.h"
 #include "atg_internals.h"
 

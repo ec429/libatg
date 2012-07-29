@@ -1,3 +1,10 @@
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	w_label.c: implements the LABEL widget
+*/
 #include "atg.h"
 #include "atg_internals.h"
 #include <SDL_ttf.h>

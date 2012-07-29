@@ -3,7 +3,7 @@
 	Copyright (C) 2012 Edward Cree
 	
 	See atg.h for license information
-	atg.c: provides everything not done elsewhere (TODO: decide what belongs here)
+	atg.c: provides top-level abstract entry points
 */
 
 #include "atg.h"

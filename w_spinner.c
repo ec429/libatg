@@ -1,3 +1,10 @@
+/*
+	atg - a tiny GUI toolkit for SDL
+	Copyright (C) 2012 Edward Cree
+	
+	See atg.h for license information
+	w_spinner.c: implements the SPINNER widget
+*/
 #include "atg.h"
 #include "atg_internals.h"
 #include <string.h>

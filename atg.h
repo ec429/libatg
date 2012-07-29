@@ -37,6 +37,7 @@ typedef enum
 	ATG_BUTTON,
 	ATG_SPINNER,
 	ATG_TOGGLE,
+	ATG_FILEPICKER,
 	
 	ATG_CUSTOM=255,
 }
@@ -105,6 +106,16 @@ atg_toggle;
 
 typedef struct
 {
+	char *title;
+	char *curdir;
+	char *value;
+	atg_colour fgcolour, bgcolour;
+	atg_box *content;
+}
+atg_filepicker;
+
+typedef struct
+{
 	SDL_Surface *surface;
 	atg_box *box;
 }
@@ -131,6 +142,7 @@ typedef struct atg_element
 		atg_button *button;
 		atg_spinner *spinner;
 		atg_toggle *toggle;
+		atg_filepicker *filepicker;
 	} elem;
 	bool clickable;
 	bool hidden;
@@ -216,6 +228,7 @@ atg_element *atg_create_element_image(SDL_Surface *img);
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
+atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour);
 
 int atg_pack_element(atg_box *box, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);
@@ -228,5 +241,6 @@ void atg_free_image(atg_element *e);
 void atg_free_button(atg_element *e);
 void atg_free_spinner(atg_element *e);
 void atg_free_toggle(atg_element *e);
+void atg_free_filepicker(atg_element *e);
 
 void atg_free_element(atg_element *element);

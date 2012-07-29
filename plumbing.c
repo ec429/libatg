@@ -38,6 +38,9 @@ SDL_Surface *atg_render_element(atg_element *e)
 		case ATG_TOGGLE:
 			rv=atg_render_toggle(e);
 		break;
+		case ATG_FILEPICKER:
+			rv=atg_render_filepicker(e);
+		break;
 		case ATG_CUSTOM:
 			if(e->render_callback)
 				rv=e->render_callback(e);
@@ -113,6 +116,9 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 			case ATG_TOGGLE:
 				atg_click_toggle(list, element, button, xoff, yoff);
 			break;
+			case ATG_FILEPICKER:
+				atg_click_filepicker(list, element, button, xoff, yoff);
+			break;
 			case ATG_CUSTOM:
 				if(element->match_click_callback)
 					element->match_click_callback(list, element, button, xoff, yoff);
@@ -151,6 +157,8 @@ atg_element *atg_copy_element(const atg_element *e)
 			return(atg_copy_spinner(e));
 		case ATG_TOGGLE:
 			return(atg_copy_toggle(e));
+		case ATG_FILEPICKER:
+			return(atg_copy_filepicker(e));
 		case ATG_CUSTOM:
 			if(e->copy_callback)
 				return(e->copy_callback(e));
@@ -182,6 +190,9 @@ void atg_free_element(atg_element *element)
 			break;
 			case ATG_TOGGLE:
 				atg_free_toggle(element);
+			break;
+			case ATG_FILEPICKER:
+				atg_free_filepicker(element);
 			break;
 			case ATG_CUSTOM:
 				if(element->free_callback)

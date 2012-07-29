@@ -9,10 +9,11 @@
 #include <stdio.h>
 #include <SDL.h>
 #include "atg.h"
+#include <sys/stat.h>
 
 int main(void)
 {
-	atg_canvas *canvas=atg_create_canvas(320, 240, (atg_colour){15, 15, 15, ATG_ALPHA_OPAQUE});
+	atg_canvas *canvas=atg_create_canvas(640, 480, (atg_colour){15, 15, 15, ATG_ALPHA_OPAQUE});
 	if(!canvas)
 	{
 		fprintf(stderr, "atg_create_canvas failed\n");
@@ -39,6 +40,15 @@ int main(void)
 	}
 	else
 		fprintf(stderr, "atg_create_element_spinner failed\n");
+	atg_element *fp=atg_create_element_filepicker("Stat file", NULL, (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+	if(fp)
+	{
+		fp->h=360;
+		if(atg_pack_element(mainbox, fp))
+			perror("atg_pack_element");
+	}
+	else
+		fprintf(stderr, "atg_create_element_filepicker failed\n");
 	atg_element *go=atg_create_element_button("Go!", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(go)
 	{
@@ -155,6 +165,26 @@ int main(void)
 						{
 							going=false;
 							atg_resize_canvas(canvas, 240, 160);
+						}
+						else if(trigger.e==fp)
+						{
+							atg_filepicker *f=fp->elem.filepicker;
+							if(f&&f->curdir&&f->value)
+							{
+								size_t n=strlen(f->curdir), m=strlen(f->value);
+								char file[n+m+1];
+								snprintf(file, n+m+1, "%s%s", f->curdir, f->value);
+								struct stat st;
+								if(stat(file, &st))
+								{
+									fprintf(stderr, "Failed to stat %s:\n", file);
+									perror("\tstat");
+								}
+								else
+								{
+									printf("sizeof %s = %zuB\n", file, (size_t)st.st_size);
+								}
+							}
 						}
 						else
 						{

@@ -69,7 +69,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 						x=xmax;
 					}
 					b->elems[i]->display=(SDL_Rect){.x=x, .y=y, .w=els[i]->w, .h=els[i]->h};
-					y+=els[i]->w;
+					y+=els[i]->h;
 					if(x+els[i]->w>xmax)
 						xmax=x+els[i]->w;
 				}

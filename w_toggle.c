@@ -94,18 +94,29 @@ atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour
 	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_toggle;
-	rv->match_click_callback=NULL;
+	rv->match_click_callback=atg_click_toggle;
+	rv->copy_callback=atg_copy_toggle;
 	rv->free_callback=atg_free_toggle;
 	return(rv);
 }
 
-atg_toggle *atg_copy_toggle(const atg_toggle *t)
+atg_element *atg_copy_toggle(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_TOGGLE)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_toggle *t=e->elem.toggle;
 	if(!t) return(NULL);
-	atg_toggle *rv=malloc(sizeof(atg_toggle));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*t;
-	rv->content=t->content?atg_copy_box(t->content):NULL;
+	*rv=*e;
+	atg_toggle *t2=rv->elem.toggle=malloc(sizeof(atg_toggle));
+	if(!t2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*t2=*t;
+	t2->content=t->content?atg_copy_box_box(t->content):NULL;
 	return(rv);
 }
 

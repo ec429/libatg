@@ -73,17 +73,28 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_label;
 	rv->match_click_callback=NULL;
+	rv->copy_callback=atg_copy_label;
 	rv->free_callback=atg_free_label;
 	return(rv);
 }
 
-atg_label *atg_copy_label(const atg_label *l)
+atg_element *atg_copy_label(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_LABEL)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_label *l=e->elem.label;
 	if(!l) return(NULL);
-	atg_label *rv=malloc(sizeof(atg_label));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*l;
-	rv->text=l->text?strdup(l->text):NULL;
+	*rv=*e;
+	atg_label *l2=rv->elem.label=malloc(sizeof(atg_label));
+	if(!l2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*l2=*l;
+	l2->text=l->text?strdup(l->text):NULL;
 	return(rv);
 }
 

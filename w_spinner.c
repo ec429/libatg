@@ -256,19 +256,30 @@ atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int
 	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_spinner;
-	rv->match_click_callback=NULL;
+	rv->match_click_callback=atg_click_spinner;
+	rv->copy_callback=atg_copy_spinner;
 	rv->free_callback=atg_free_spinner;
 	return(rv);
 }
 
-atg_spinner *atg_copy_spinner(const atg_spinner *s)
+atg_element *atg_copy_spinner(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_SPINNER)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_spinner *s=e->elem.spinner;
 	if(!s) return(NULL);
-	atg_spinner *rv=malloc(sizeof(atg_spinner));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*s;
-	rv->content=s->content?atg_copy_box(s->content):NULL;
-	rv->fmt=s->fmt?strdup(s->fmt):NULL;
+	*rv=*e;
+	atg_spinner *s2=rv->elem.spinner=malloc(sizeof(atg_spinner));
+	if(!s2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*s2=*s;
+	s2->content=s->content?atg_copy_box_box(s->content):NULL;
+	s2->fmt=s->fmt?strdup(s->fmt):NULL;
 	return(rv);
 }
 

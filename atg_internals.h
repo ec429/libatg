@@ -20,12 +20,13 @@ SDL_Surface *atg_render_toggle(const atg_element *e);
 
 /* Standard copiers */
 atg_element *atg_copy_element(const atg_element *e);
-atg_box *atg_copy_box(const atg_box *b);
-atg_label *atg_copy_label(const atg_label *);
-atg_image *atg_copy_image(const atg_image *);
-atg_button *atg_copy_button(const atg_button *);
-atg_spinner *atg_copy_spinner(const atg_spinner *);
-atg_toggle *atg_copy_toggle(const atg_toggle *);
+atg_element *atg_copy_box(const atg_element *e);
+atg_box *atg_copy_box_box(const atg_box *b);
+atg_element *atg_copy_label(const atg_element *e);
+atg_element *atg_copy_image(const atg_element *e);
+atg_element *atg_copy_button(const atg_element *e);
+atg_element *atg_copy_spinner(const atg_element *e);
+atg_element *atg_copy_toggle(const atg_element *e);
 
 /* Event lists */
 typedef struct atg__event_list

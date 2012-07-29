@@ -94,18 +94,29 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_button;
-	rv->match_click_callback=NULL;
+	rv->match_click_callback=atg_click_button;
+	rv->copy_callback=atg_copy_button;
 	rv->free_callback=atg_free_button;
 	return(rv);
 }
 
-atg_button *atg_copy_button(const atg_button *b)
+atg_element *atg_copy_button(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_button *b=e->elem.button;
 	if(!b) return(NULL);
-	atg_button *rv=malloc(sizeof(atg_button));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*b;
-	rv->content=b->content?atg_copy_box(b->content):NULL;
+	*rv=*e;
+	atg_button *b2=rv->elem.button=malloc(sizeof(atg_button));
+	if(!b2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*b2=*b;
+	b2->content=b->content?atg_copy_box_box(b->content):NULL;
 	return(rv);
 }
 

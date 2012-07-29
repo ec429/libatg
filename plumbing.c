@@ -130,38 +130,24 @@ void atg__match_click(struct atg_event_list *list, atg_canvas *canvas, SDL_Mouse
 atg_element *atg_copy_element(const atg_element *e)
 {
 	if(!e) return(NULL);
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	*rv=*e;
-	rv->cached=NULL;
-	switch(rv->type)
+	switch(e->type)
 	{
 		case ATG_BOX:
-			rv->elem.box=atg_copy_box(e->elem.box);
-			return(rv);
+			return(atg_copy_box(e));
 		case ATG_LABEL:
-			rv->elem.label=atg_copy_label(e->elem.label);
-			return(rv);
+			return(atg_copy_label(e));
 		case ATG_IMAGE:
-			rv->elem.image=atg_copy_image(e->elem.image);
-			return(rv);
+			return(atg_copy_image(e));
 		case ATG_BUTTON:
-			rv->elem.button=atg_copy_button(e->elem.button);
-			return(rv);
+			return(atg_copy_button(e));
 		case ATG_SPINNER:
-			rv->elem.spinner=atg_copy_spinner(e->elem.spinner);
-			return(rv);
+			return(atg_copy_spinner(e));
 		case ATG_TOGGLE:
-			rv->elem.toggle=atg_copy_toggle(e->elem.toggle);
-			return(rv);
+			return(atg_copy_toggle(e));
 		case ATG_CUSTOM:
 			if(e->copy_callback)
-			{
-				rv->elem.box=e->copy_callback((void *)e->elem.box);
-				return(rv);
-			}
+				return(e->copy_callback(e));
 		default:
-			free(rv);
 			return(NULL);
 	}
 }

@@ -47,17 +47,29 @@ atg_element *atg_create_element_image(SDL_Surface *img)
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_image;
 	rv->match_click_callback=NULL;
+	rv->copy_callback=atg_copy_image;
 	rv->free_callback=atg_free_image;
 	return(rv);
 }
 
-atg_image *atg_copy_image(const atg_image *i)
+atg_element *atg_copy_image(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_IMAGE)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_image *i=e->elem.image;
 	if(!i) return(NULL);
-	atg_image *rv=malloc(sizeof(atg_image));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*i;
-	(rv->data=i->data)->refcount++;
+	*rv=*e;
+	atg_image *i2=rv->elem.image=malloc(sizeof(atg_image));
+	if(!i2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*i2=*i;
+	if(i2->data)
+		i2->data->refcount++;
 	return(rv);
 }
 

@@ -121,7 +121,7 @@ typedef struct atg_element
 	SDL_Rect display; /* co-ordinates within containing box */
 	SDL_Surface *(*render_callback)(const struct atg_element *e);
 	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
-	void *(*copy_callback)(void *elem);
+	struct atg_element *(*copy_callback)(const struct atg_element *e);
 	void (*free_callback)(struct atg_element *e);
 	atg_type type;
 	union {

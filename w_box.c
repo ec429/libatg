@@ -209,20 +209,38 @@ atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
 	rv->cached=NULL;
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_box;
-	rv->match_click_callback=NULL;
+	rv->match_click_callback=atg_click_box;
+	rv->copy_callback=atg_copy_box;
 	rv->free_callback=atg_free_box;
 	return(rv);
 }
 
-atg_box *atg_copy_box(const atg_box *b)
+atg_element *atg_copy_box(const atg_element *e)
 {
+	if(!e) return(NULL);
+	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM))) return(NULL);
+	atg_box *b=e->elem.box;
 	if(!b) return(NULL);
-	atg_box *rv=malloc(sizeof(atg_box));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	*rv=*b;
-	for(unsigned int i=0;i<rv->nelems;i++)
-		rv->elems[i]=atg_copy_element(b->elems[i]);
+	*rv=*e;
+	if(!(rv->elem.box=atg_copy_box_box(b)))
+	{
+		free(rv);
+		return(NULL);
+	}
 	return(rv);
+}
+
+atg_box *atg_copy_box_box(const atg_box *b)
+{
+	atg_box *b2=malloc(sizeof(atg_box));
+	if(!b2)
+		return(NULL);
+	*b2=*b;
+	for(unsigned int i=0;i<b->nelems;i++)
+		b2->elems[i]=atg_copy_element(b->elems[i]);
+	return(b2);
 }
 
 void atg_free_box(atg_element *e)

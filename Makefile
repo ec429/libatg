@@ -15,6 +15,7 @@ install: libatg.la
 	libtool --mode=install install -D -m0755 libatg.la $(PREFIX)/lib/libatg.la
 	libtool --mode=install install -D -m0644 atg.h $(PREFIX)/include/atg.h
 	libtool --mode=install install -D -m0644 atg_internals.h $(PREFIX)/include/atg_internals.h
+	-ldconfig
 
 uninstall:
 	libtool --mode=uninstall /bin/rm -f $(PREFIX)/lib/libatg.la $(PREFIX)/include/atg.h $(PREFIX)/include/atg_internals.h

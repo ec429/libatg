@@ -17,8 +17,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-// TODO: sort entries in atg_render_filepicker
-
 #define CWD_BUF_SIZE	4096
 
 static const char *filters_dir;

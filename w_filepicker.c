@@ -35,7 +35,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 	}
 	if(b->nelems>2&&b->elems[2]&&b->elems[2]->type==ATG_BOX)
 	{
-		b->elems[2]->h=(e->h>46)?e->h-46:0;
+		b->elems[2]->h=(e->h>28)?e->h-28:0;
 		atg_free_box_box(b->elems[2]->elem.box);
 		atg_box *b2=b->elems[2]->elem.box=atg_create_box(ATG_BOX_PACK_VERTICAL, f->bgcolour);
 		if(!b2) return(NULL);
@@ -119,61 +119,50 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 			atg_element *e=event.event.trigger.e;
 			if(e&&e->type==ATG_BUTTON)
 			{
-				if((b->nelems>3)&&(e==b->elems[3]))
+				atg_button *btn=e->elem.button;
+				if(btn)
 				{
-					/*
-					** To construct the filepath use:
-					char *file=malloc(strlen(f->curdir)+strlen(f->value)+1);
-					sprintf(file, "%s%s", f->curdir, f->value);
-					*/
-					atg__push_event(list, (atg_event){.type=ATG_EV_TRIGGER, .event.trigger=(atg_ev_trigger){.e=element, .button=button.button}});
-				}
-				else
-				{
-					atg_button *btn=e->elem.button;
-					if(btn)
+					atg_box *box=btn->content;
+					if(box&&box->nelems&&box->elems)
 					{
-						atg_box *box=btn->content;
-						if(box&&box->nelems&&box->elems)
+						atg_element *e=box->elems[0];
+						if(e&&e->type==ATG_LABEL)
 						{
-							atg_element *e=box->elems[0];
-							if(e&&e->type==ATG_LABEL)
+							atg_label *l=e->elem.label;
+							if(l&&l->text)
 							{
-								atg_label *l=e->elem.label;
-								if(l&&l->text)
+								size_t n=strlen(l->text);
+								if(l->text[n-1]=='/')
 								{
-									size_t n=strlen(l->text);
-									if(l->text[n-1]=='/')
+									if(strcmp(l->text, "../")==0)
 									{
-										if(strcmp(l->text, "../")==0)
+										if(f->curdir)
 										{
-											if(f->curdir)
-											{
-												size_t m=strlen(f->curdir);
-												f->curdir[m-1]=0;
-												char *s=strrchr(f->curdir, '/');
-												if(s) s[1]=0;
-											}
-										}
-										else
-										{
-											char *newdir=malloc(strlen(f->curdir)+strlen(l->text)+1);
-											sprintf(newdir, "%s%s", f->curdir, l->text);
-											free(f->curdir);
-											f->curdir=newdir;
-											free(f->value);
-											f->value=NULL;
+											size_t m=strlen(f->curdir);
+											f->curdir[m-1]=0;
+											char *s=strrchr(f->curdir, '/');
+											if(s) s[1]=0;
 										}
 									}
 									else
 									{
-										f->value=strdup(l->text);
+										char *newdir=malloc(strlen(f->curdir)+strlen(l->text)+1);
+										sprintf(newdir, "%s%s", f->curdir, l->text);
+										free(f->curdir);
+										f->curdir=newdir;
 									}
+									free(f->value);
+									f->value=NULL;
+								}
+								else
+								{
+									f->value=strdup(l->text);
 								}
 							}
 						}
 					}
 				}
+				atg__push_event(list, (atg_event){.type=ATG_EV_VALUE, .event.value=(atg_ev_value){.e=element, .value=0}});
 			}
 		}
 		atg__event_list *next=sub_list.list->next;
@@ -273,24 +262,6 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		if(atg_pack_element(rv->content, vbox))
 		{
 			atg_free_element(vbox);
-			atg_free_box_box(rv->content);
-			free(rv->title);
-			free(rv->curdir);
-			free(rv);
-			return(NULL);
-		}
-		atg_element *okbtn=atg_create_element_button("OK", fgcolour, bgcolour);
-		if(!okbtn)
-		{
-			atg_free_box_box(rv->content);
-			free(rv->title);
-			free(rv->curdir);
-			free(rv);
-			return(NULL);
-		}
-		if(atg_pack_element(rv->content, okbtn))
-		{
-			atg_free_element(okbtn);
 			atg_free_box_box(rv->content);
 			free(rv->title);
 			free(rv->curdir);

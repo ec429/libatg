@@ -24,39 +24,114 @@ int main(void)
 	if(hello)
 	{
 		if(atg_pack_element(mainbox, hello))
+		{
 			perror("atg_pack_element");
+			return(1);
+		}
 		for(unsigned int i=0;i<21;i++)
 			if(atg_pack_element(mainbox, atg_copy_element(hello)))
+			{
 				perror("atg_pack_element");
+				return(1);
+			}
 		hello->clickable=true;
 	}
 	else
+	{
 		fprintf(stderr, "atg_create_element_label failed\n");
+		return(1);
+	}
 	atg_element *spin=atg_create_element_spinner(ATG_SPINNER_RIGHTCLICK_STEP10, 0, 100, 1, 10, "%03d", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(spin)
 	{
 		if(atg_pack_element(mainbox, spin))
+		{
 			perror("atg_pack_element");
+			return(1);
+		}
 	}
 	else
+	{
 		fprintf(stderr, "atg_create_element_spinner failed\n");
+		return(1);
+	}
 	atg_element *fp=atg_create_element_filepicker("Stat file", NULL, (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(fp)
 	{
-		fp->h=360;
+		fp->h=460;
 		if(atg_pack_element(mainbox, fp))
+		{
 			perror("atg_pack_element");
+			return(1);
+		}
 	}
 	else
+	{
 		fprintf(stderr, "atg_create_element_filepicker failed\n");
+		return(1);
+	}
+	atg_element *bbox=atg_create_element_box(ATG_BOX_PACK_HORIZONTAL, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE}), *Stat=NULL, *Clear=NULL;
+	if(bbox)
+	{
+		if(atg_pack_element(mainbox, bbox))
+		{
+			perror("atg_pack_element");
+			return(1);
+		}
+		atg_box *b=bbox->elem.box;
+		if(!b)
+		{
+			fprintf(stderr, "bbox->elem.box==NULL!\n");
+			return(1);
+		}
+		Stat=atg_create_element_button("Stat", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+		if(Stat)
+		{
+			if(atg_pack_element(b, Stat))
+			{
+				perror("atg_pack_element");
+				return(1);
+			}
+		}
+		else
+		{
+			fprintf(stderr, "atg_create_element_button failed\n");
+			return(1);
+		}
+		Clear=atg_create_element_button("Clear", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
+		if(Clear)
+		{
+			if(atg_pack_element(b, Clear))
+			{
+				perror("atg_pack_element");
+				return(1);
+			}
+		}
+		else
+		{
+			fprintf(stderr, "atg_create_element_button failed\n");
+			return(1);
+		}
+	}
+	else
+	{
+		fprintf(stderr, "atg_create_element_box failed\n");
+		return(1);
+	}
 	atg_element *go=atg_create_element_button("Go!", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(go)
 	{
 		if(atg_pack_element(mainbox, go))
+		{
 			perror("atg_pack_element");
+			return(1);
+		}
 	}
 	else
+	{
 		fprintf(stderr, "atg_create_element_button failed\n");
+		return(1);
+	}
 	atg_event e;
 	int errupt=0;
 	bool going=false;
@@ -166,24 +241,40 @@ int main(void)
 							going=false;
 							atg_resize_canvas(canvas, 240, 160);
 						}
-						else if(trigger.e==fp)
+						else if(trigger.e==Stat)
 						{
 							atg_filepicker *f=fp->elem.filepicker;
-							if(f&&f->curdir&&f->value)
+							if(f&&f->curdir)
 							{
-								size_t n=strlen(f->curdir), m=strlen(f->value);
-								char file[n+m+1];
-								snprintf(file, n+m+1, "%s%s", f->curdir, f->value);
-								struct stat st;
-								if(stat(file, &st))
+								if(f->value)
 								{
-									fprintf(stderr, "Failed to stat %s:\n", file);
-									perror("\tstat");
+									size_t n=strlen(f->curdir), m=strlen(f->value);
+									char file[n+m+1];
+									snprintf(file, n+m+1, "%s%s", f->curdir, f->value);
+									struct stat st;
+									if(stat(file, &st))
+									{
+										fprintf(stderr, "Failed to stat %s:\n", file);
+										perror("\tstat");
+									}
+									else
+									{
+										printf("sizeof %s = %zuB\n", file, (size_t)st.st_size);
+									}
 								}
 								else
 								{
-									printf("sizeof %s = %zuB\n", file, (size_t)st.st_size);
+									fprintf(stderr, "Filepicker: no file selected!\n");
 								}
+							}
+						}
+						else if(trigger.e==Clear)
+						{
+							atg_filepicker *f=fp->elem.filepicker;
+							if(f&&f->value)
+							{
+								free(f->value);
+								f->value=NULL;
 							}
 						}
 						else
@@ -203,6 +294,19 @@ int main(void)
 						if(value.e==spin)
 						{
 							printf("Spinner value set to %d\n", value.value);
+						}
+						else if(value.e==fp)
+						{
+							atg_filepicker *f=fp->elem.filepicker;
+							if(f&&f->curdir)
+							{
+								if(f->value)
+									printf("Filepicker value set to %s%s\n", f->curdir, f->value);
+								else
+									printf("Filepicker chdir to %s\n", f->curdir);
+							}
+							else
+								fprintf(stderr, "Filepicker error\n");
 						}
 						else
 						{

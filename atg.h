@@ -111,6 +111,11 @@ typedef struct
 	char *value;
 	atg_colour fgcolour, bgcolour;
 	atg_box *content;
+	/*
+	** To construct the filepath use:
+	char *file=malloc(strlen(f->curdir)+strlen(f->value)+1);
+	sprintf(file, "%s%s", f->curdir, f->value);
+	*/
 }
 atg_filepicker;
 

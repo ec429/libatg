@@ -5,8 +5,12 @@
 	See atg.h for license information
 	w_filepicker.c: implements the FILEPICKER widget
 */
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif /* ifndef GNU_SOURCE */
 #include "atg.h"
 #include "atg_internals.h"
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -14,9 +18,45 @@
 #include <errno.h>
 
 // TODO: sort entries in atg_render_filepicker
-// TODO: optional type-ins (for eg. Save dialogs)
 
 #define CWD_BUF_SIZE	4096
+
+static const char *filters_dir;
+
+static int filter_dirs(const struct dirent *d)
+{
+	if(d->d_name[0]=='.' && (strcmp(d->d_name, "..")||!strcmp(filters_dir, "/"))) return(0);
+	size_t n=strlen(d->d_name)+3, m=strlen(filters_dir);
+	struct stat st;
+	char fullpath[m+n];
+	snprintf(fullpath, m+n, "%s%s", filters_dir, d->d_name);
+	if(stat(fullpath, &st)) return(0);
+	if(st.st_mode&S_IFDIR) return(1);
+	return(0);
+}
+
+static int filter_files(const struct dirent *d)
+{
+	if(d->d_name[0]=='.') return(0);
+	size_t n=strlen(d->d_name)+3, m=strlen(filters_dir);
+	struct stat st;
+	char fullpath[m+n];
+	snprintf(fullpath, m+n, "%s%s", filters_dir, d->d_name);
+	if(stat(fullpath, &st)) return(0);
+	if(st.st_mode&S_IFDIR) return(0);
+	return(1);
+}
+
+static int filter_stats(const struct dirent *d)
+{
+	if(d->d_name[0]=='.') return(0);
+	size_t n=strlen(d->d_name)+3, m=strlen(filters_dir);
+	struct stat st;
+	char fullpath[m+n];
+	snprintf(fullpath, m+n, "%s%s", filters_dir, d->d_name);
+	if(stat(fullpath, &st)) return(1);
+	return(0);
+}
 
 SDL_Surface *atg_render_filepicker(const atg_element *e)
 {
@@ -39,53 +79,60 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		atg_free_box_box(b->elems[2]->elem.box);
 		atg_box *b2=b->elems[2]->elem.box=atg_create_box(ATG_BOX_PACK_VERTICAL, f->bgcolour);
 		if(!b2) return(NULL);
-		DIR *d=opendir(f->curdir);
-		if(!d)
+		struct dirent **dirs, **files, **stats;
+		filters_dir=f->curdir;
+		int ndirs=scandir(f->curdir, &dirs, filter_dirs, versionsort);
+		if(ndirs==-1) return(NULL);
+		int nfiles=scandir(f->curdir, &files, filter_files, versionsort);
+		if(nfiles==-1)
 		{
-			char errmsg[64];
-			snprintf(errmsg, 64, "opendir: %s", strerror(errno));
-			atg_element *l=atg_create_element_label(errmsg, 10, f->fgcolour);
-			if(l)
-				atg_pack_element(b2, l);
+			while(ndirs--)
+				free(dirs[ndirs]);
+			free(dirs);
+			return(NULL);
 		}
-		else
+		int nstats=scandir(f->curdir, &stats, filter_stats, versionsort);
+		if(nstats==-1)
 		{
-			struct dirent *entry;
-			while((entry=readdir(d)))
-			{
-				if(entry->d_name[0]=='.' && (strcmp(entry->d_name, "..")||!strcmp(f->curdir, "/"))) continue;
-				size_t n=strlen(entry->d_name)+3, m=strlen(f->curdir);
-				char line[n];
-				struct stat st;
-				char fullpath[m+n];
-				snprintf(fullpath, m+n, "%s%s", f->curdir, entry->d_name);
-				if(stat(fullpath, &st))
-				{
-					snprintf(line, n, "! %s", entry->d_name);
-					atg_element *l=atg_create_element_label(line, 10, f->fgcolour);
-					if(l)
-						atg_pack_element(b2, l);
-				}
-				else
-				{
-					if(st.st_mode&S_IFDIR)
-					{
-						snprintf(line, n, "%s/", entry->d_name);
-						atg_element *btn=atg_create_element_button(line, f->fgcolour, f->bgcolour);
-						if(btn)
-							atg_pack_element(b2, btn);
-					}
-					else
-					{
-						bool sel=f->value&&!strcmp(entry->d_name, f->value);
-						atg_element *btn=atg_create_element_button(entry->d_name, sel?f->bgcolour:f->fgcolour, sel?f->fgcolour:f->bgcolour);
-						if(btn)
-							atg_pack_element(b2, btn);
-					}
-				}
-			}
-			closedir(d);
+			while(files--)
+				free(files[nfiles]);
+			free(files);
+			while(ndirs--)
+				free(dirs[ndirs]);
+			free(dirs);
+			return(NULL);
 		}
+		for(int n=0;n<ndirs;n++)
+		{
+			size_t l=strlen(dirs[n]->d_name);
+			char lbl[l+2];
+			snprintf(lbl, l+2, "%s/", dirs[n]->d_name);
+			atg_element *btn=atg_create_element_button(lbl, f->fgcolour, f->bgcolour);
+			if(btn)
+				atg_pack_element(b2, btn);
+			free(dirs[n]);
+		}
+		free(dirs);
+		for(int n=0;n<nfiles;n++)
+		{
+			bool sel=f->value&&!strcmp(files[n]->d_name, f->value);
+			atg_element *btn=atg_create_element_button(files[n]->d_name, sel?f->bgcolour:f->fgcolour, sel?f->fgcolour:f->bgcolour);
+			if(btn)
+				atg_pack_element(b2, btn);
+			free(files[n]);
+		}
+		free(files);
+		for(int n=0;n<nstats;n++)
+		{
+			size_t l=strlen(stats[n]->d_name);
+			char lbl[l+3];
+			snprintf(lbl, l+3, "! %s", stats[n]->d_name);
+			atg_element *btn=atg_create_element_label(lbl, 14, f->fgcolour);
+			if(btn)
+				atg_pack_element(b2, btn);
+			free(stats[n]);
+		}
+		free(stats);
 	}
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=f->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);

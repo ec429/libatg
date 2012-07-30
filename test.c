@@ -58,6 +58,7 @@ int main(void)
 	atg_element *fp=atg_create_element_filepicker("Stat file", NULL, (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(fp)
 	{
+		fp->cache=true;
 		fp->h=460;
 		if(atg_pack_element(mainbox, fp))
 		{

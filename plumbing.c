@@ -94,6 +94,11 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 		&&(button.y<element->display.y+yoff+element->display.h)
 	)
 	{
+		if(element->cached) // Catching clicks clears cache.  It's only prudent
+		{
+			SDL_FreeSurface(element->cached);
+			element->cached=NULL;
+		}
 		if(element->clickable)
 		{
 			atg_ev_click click;

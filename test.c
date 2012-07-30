@@ -324,6 +324,7 @@ int main(void)
 				break;
 			}
 		}
+		SDL_Delay(50);
 	}
 	atg_free_canvas(canvas);
 	return(0);

@@ -10,7 +10,6 @@
 SDL_Surface *atg_resize_surface(SDL_Surface *src, const atg_element *e);
 
 /* Standard constructors */
-atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_image *atg_create_image(SDL_Surface *img);
 atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);

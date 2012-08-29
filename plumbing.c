@@ -103,7 +103,7 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 		{
 			atg_ev_click click;
 			click.e=element;
-			click.pos=(atg_pos){.x=button.x-element->display.x, .y=button.y-element->display.y};
+			click.pos=(atg_pos){.x=button.x-element->display.x-xoff, .y=button.y-element->display.y-yoff};
 			click.button=button.button;
 			atg__push_event(list, (atg_event){.type=ATG_EV_CLICK, .event.click=click});
 		}

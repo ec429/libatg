@@ -44,3 +44,9 @@ w_%.lo: w_%.c $(INCLUDES)
 %.lo: %.c %.h
 	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
+w32:
+	rm -rf libatg-w32
+	mkdir libatg-w32
+	-for p in *.c *.h readme; do cp $$p libatg-w32/$$p; done
+	-for p in $$(ls wbits); do cp wbits/$$p libatg-w32/$$p; done
+	make -C libatg-w32 -fMakefile.w32

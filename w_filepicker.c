@@ -58,6 +58,9 @@ static int filter_stats(const struct dirent *d)
 
 SDL_Surface *atg_render_filepicker(const atg_element *e)
 {
+#ifdef WINDOWS
+	return(NULL);
+#else // !WINDOWS
 	if(!e) return(NULL);
 	if(!((e->type==ATG_FILEPICKER)||(e->type==ATG_CUSTOM))) return(NULL);
 	atg_filepicker *f=e->elem.filepicker;
@@ -144,10 +147,12 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 	SDL_BlitSurface(content, NULL, rv, &(SDL_Rect){.x=0, .y=0});
 	SDL_FreeSurface(content);
 	return(rv);
+#endif // WINDOWS
 }
 
 void atg_click_filepicker(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
+#ifndef WINDOWS
 	atg_filepicker *f=element->elem.filepicker;
 	if(!f) return;
 	atg_box *b=f->content;
@@ -214,6 +219,7 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 		free(sub_list.list);
 		sub_list.list=next;
 	}
+#endif // !WINDOWS
 }
 
 atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour)

@@ -11,7 +11,11 @@
 
 #define MAXFONTSIZE	24
 bool ttfinit=false;
+#ifdef WINDOWS
+const char *monofont="./LiberationMono-Regular.ttf";
+#else // !WINDOWS
 const char *monofont="/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf";
+#endif
 TTF_Font *monottf[MAXFONTSIZE];
 
 void initttf(void)

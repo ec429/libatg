@@ -101,6 +101,7 @@ int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 
 int atg_pack_element(atg_box *box, atg_element *elem)
 {
+	if(!box) return(1);
 	unsigned int n=box->nelems++;
 	atg_element **new=realloc(box->elems, box->nelems*sizeof(atg_element *));
 	if(new)
@@ -110,6 +111,30 @@ int atg_pack_element(atg_box *box, atg_element *elem)
 	}
 	box->nelems=n;
 	return(1);
+}
+
+int atg_ebox_pack(atg_element *ebox, atg_element *elem)
+{
+	if(!ebox) return(1);
+	atg_box *b;
+	switch(ebox->type)
+	{
+		case ATG_BOX:
+			b=ebox->elem.box;
+		break;
+		case ATG_BUTTON:
+		{
+			atg_button *btn=ebox->elem.button;
+			if(btn)
+				b=btn->content;
+			else
+				return(1);
+		}
+		break;
+		default:
+			return(1);
+	}
+	return(atg_pack_element(b, elem));
 }
 
 void atg_free_canvas(atg_canvas *canvas)

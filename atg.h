@@ -232,6 +232,7 @@ atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_element *atg_create_element_image(SDL_Surface *img);
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
+atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour);

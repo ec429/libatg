@@ -82,11 +82,52 @@ atg_button *atg_create_button(const char *label, atg_colour fgcolour, atg_colour
 	return(rv);
 }
 
+atg_button *atg_create_button_empty(atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_button *rv=malloc(sizeof(atg_button));
+	if(rv)
+	{
+		rv->fgcolour=fgcolour;
+		rv->content=atg_create_box(ATG_BOX_PACK_HORIZONTAL, bgcolour);
+		if(!rv->content)
+		{
+			free(rv);
+			return(NULL);
+		}
+	}
+	return(rv);
+}
+
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
 	atg_button *b=atg_create_button(label, fgcolour, bgcolour);
+	if(!b)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type=ATG_BUTTON;
+	rv->elem.button=b;
+	rv->clickable=false; /* because it generates ATG_EV_TRIGGER events instead */
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_button;
+	rv->match_click_callback=atg_click_button;
+	rv->copy_callback=atg_copy_button;
+	rv->free_callback=atg_free_button;
+	return(rv);
+}
+
+atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_button *b=atg_create_button_empty(fgcolour, bgcolour);
 	if(!b)
 	{
 		free(rv);

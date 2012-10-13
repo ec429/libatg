@@ -36,18 +36,21 @@ SDL_Surface *atg_resize_surface(SDL_Surface *src, const atg_element *e)
 	return(rv);
 }
 
-void atg_flip(atg_canvas *canvas)
+void atg_flip(atg_element *canvas)
 {
 	if(!canvas) return;
-	if(!canvas->surface) return;
-	if(!canvas->box) return;
-	SDL_Surface *box=atg_render_box(&(atg_element){.w=canvas->surface->w, .h=canvas->surface->h, .type=ATG_BOX, .elem.box=canvas->box, .clickable=true, .userdata=NULL});
-	SDL_BlitSurface(box, NULL, canvas->surface, NULL);
+	if(canvas->type!=ATG_CANVAS) return;
+	atg_canvas *c=canvas->elem.canvas;
+	if(!c) return;
+	if(!c->surface) return;
+	if(!c->content) return;
+	SDL_Surface *box=atg_render_box(c->content);
+	SDL_BlitSurface(box, NULL, c->surface, NULL);
 	SDL_FreeSurface(box);
-	SDL_Flip(canvas->surface);
+	SDL_Flip(c->surface);
 }
 
-int atg_poll_event(atg_event *event, atg_canvas *canvas)
+int atg_poll_event(atg_event *event, atg_element *canvas)
 {
 	static struct atg_event_list atg__ev_list={.list=NULL, .last=NULL};
 	if(!event) return(atg__ev_list.list?1:SDL_PollEvent(NULL));
@@ -73,15 +76,36 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas)
 	return(0);
 }
 
-atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour)
+atg_element *atg_create_element_canvas(unsigned int w, unsigned int h, atg_colour bgcolour)
 {
 	SDL_Surface *screen=gf_init(w, h);
 	if(!screen) return(NULL);
-	atg_canvas *rv=malloc(sizeof(atg_canvas));
+	atg_element *rv=malloc(sizeof(atg_element));
 	if(rv)
 	{
-		rv->surface=screen;
-		rv->box=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
+		atg_canvas *c=malloc(sizeof(atg_canvas));
+		if(c)
+		{
+			c->surface=screen;
+			c->content=atg_create_element_box(ATG_BOX_PACK_VERTICAL, bgcolour);
+			if(c->content)
+			{
+				c->content->w=w;
+				c->content->h=h;
+			}
+			else
+			{
+				free(c);
+				free(rv);
+				return(NULL);
+			}
+			rv->elem.canvas=c;
+		}
+		else
+		{
+			free(rv);
+			return(NULL);
+		}
 	}
 	return(rv);
 }
@@ -99,7 +123,7 @@ int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 	return(0);
 }
 
-int atg_pack_element(atg_box *box, atg_element *elem)
+int atg_box_pack(atg_box *box, atg_element *elem)
 {
 	if(!box) return(1);
 	unsigned int n=box->nelems++;
@@ -113,28 +137,48 @@ int atg_pack_element(atg_box *box, atg_element *elem)
 	return(1);
 }
 
-int atg_ebox_pack(atg_element *ebox, atg_element *elem)
+int atg_pack_element(atg_element *box, atg_element *elem)
 {
 	if(!ebox) return(1);
-	atg_box *b;
-	switch(ebox->type)
+	switch(box->type)
 	{
 		case ATG_BOX:
-			b=ebox->elem.box;
-		break;
+			return(atg_box_pack(box->elem.box));
 		case ATG_BUTTON:
 		{
-			atg_button *btn=ebox->elem.button;
+			atg_button *btn=box->elem.button;
 			if(btn)
-				b=btn->content;
+				return(atg_box_pack(btn->content));
 			else
 				return(1);
 		}
-		break;
+		case ATG_SPINNER:
+		{
+			atg_button *spn=box->elem.spinner;
+			if(spn)
+				return(atg_box_pack(spn->content));
+			else
+				return(1);
+		}
+		case ATG_TOGGLE:
+		{
+			atg_button *btn=box->elem.toggle;
+			if(btn)
+				return(atg_box_pack(btn->content));
+			else
+				return(1);
+		}
+		case ATG_FILEPICKER:
+		{
+			atg_button *fp=box->elem.filepicker;
+			if(fp)
+				return(atg_box_pack(fp->content));
+			else
+				return(1);
+		}
 		default:
 			return(1);
 	}
-	return(atg_pack_element(b, elem));
 }
 
 void atg_free_canvas(atg_canvas *canvas)

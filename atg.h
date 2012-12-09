@@ -26,15 +26,11 @@
 #define ATG_SPINNER_RIGHTCLICK_STEP10	0
 #define ATG_SPINNER_RIGHTCLICK_TIMES2	1
 
-/*#define ATG_SCROLL_HORIZONTAL	1
-#define ATG_SCROLL_VERTICAL		2*/
-
 #define ATG_ALPHA_TRANSPARENT	SDL_ALPHA_TRANSPARENT
 #define ATG_ALPHA_OPAQUE		SDL_ALPHA_OPAQUE
 
 typedef enum
 {
-	ATG_CANVAS,
 	ATG_BOX,
 	ATG_LABEL,
 	ATG_IMAGE,
@@ -42,7 +38,6 @@ typedef enum
 	ATG_SPINNER,
 	ATG_TOGGLE,
 	ATG_FILEPICKER,
-	//ATG_SCROLL,
 	
 	ATG_CUSTOM=255,
 }
@@ -87,7 +82,7 @@ atg_image;
 typedef struct
 {
 	atg_colour fgcolour;
-	struct atg_element *content;
+	atg_box *content;
 }
 atg_button;
 
@@ -97,7 +92,7 @@ typedef struct
 	Uint8 flags; /* for ATG_SPINNER_RIGHTCLICK_STEP10 and ATG_SPINNER_RIGHTCLICK_TIMES2 */
 	int value;
 	char *fmt;
-	struct atg_element *content;
+	atg_box *content;
 }
 atg_spinner;
 
@@ -105,7 +100,7 @@ typedef struct
 {
 	bool state;
 	atg_colour fgcolour, bgcolour;
-	struct atg_element *content;
+	atg_box *content;
 }
 atg_toggle;
 
@@ -115,7 +110,7 @@ typedef struct
 	char *curdir;
 	char *value;
 	atg_colour fgcolour, bgcolour;
-	struct atg_element *content;
+	atg_box *content;
 	/*
 	** To construct the filepath use:
 	char *file=malloc(strlen(f->curdir)+strlen(f->value)+1);
@@ -124,19 +119,10 @@ typedef struct
 }
 atg_filepicker;
 
-/*typedef struct
-{
-	Uint8 flags; ** for ATG_SCROLL_HORIZONTAL and ATG_SCROLL_VERTICAL **
-	unsigned int sw, sh;
-	unsigned int px, py;
-	struct atg_element *content;
-}
-atg_scroll;*/
-
 typedef struct
 {
 	SDL_Surface *surface;
-	struct atg_element *content;
+	atg_box *box;
 }
 atg_canvas;
 
@@ -155,7 +141,6 @@ typedef struct atg_element
 	void (*free_callback)(struct atg_element *e);
 	atg_type type;
 	union {
-		atg_canvas *canvas;
 		atg_box *box;
 		atg_label *label;
 		atg_image *image;
@@ -163,7 +148,6 @@ typedef struct atg_element
 		atg_spinner *spinner;
 		atg_toggle *toggle;
 		atg_filepicker *filepicker;
-		//atg_scroll *scroll;
 	} elem;
 	bool clickable;
 	bool hidden;
@@ -236,12 +220,12 @@ typedef struct
 }
 atg_event;
 
-void atg_flip(atg_element *canvas);
+void atg_flip(atg_canvas *canvas);
 
-int atg_poll_event(atg_event *event, atg_element *canvas);
+int atg_poll_event(atg_event *event, atg_canvas *canvas);
 
-atg_element *atg_create_element_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
-int atg_resize_canvas(atg_element *canvas, unsigned int w, unsigned int h);
+atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
+int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h);
 atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
@@ -252,12 +236,12 @@ atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgc
 atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour);
-//atg_element *atg_create_element_scroll(atg_element *content, Uint8 flags, unsigned int sw, unsigned int sh);
 
-int atg_pack_element(atg_element *box, atg_element *elem);
+int atg_pack_element(atg_box *box, atg_element *elem);
+int atg_ebox_pack(atg_element *ebox, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);
 
-void atg_free_canvas(atg_element *canvas);
+void atg_free_canvas(atg_canvas *canvas);
 void atg_free_box(atg_element *e);
 void atg_free_box_box(atg_box *b);
 void atg_free_label(atg_element *e);
@@ -266,6 +250,5 @@ void atg_free_button(atg_element *e);
 void atg_free_spinner(atg_element *e);
 void atg_free_toggle(atg_element *e);
 void atg_free_filepicker(atg_element *e);
-//void atg_free_scroll(atg_element *e);
 
 void atg_free_element(atg_element *element);

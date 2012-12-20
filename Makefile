@@ -1,6 +1,6 @@
 # Makefile for atg, a tiny gui for SDL
 PREFIX := /usr/local
-MONOFONTPATH := $$(find /usr/share/fonts -name LiberationMono-Regular.ttf)
+MONOFONTPATH := $$(find /usr/share/fonts -name LiberationMono-Regular.ttf -print -quit)
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DMONOFONTPATH=\"$(MONOFONTPATH)\"
 SDL := `sdl-config --libs` -lSDL_ttf

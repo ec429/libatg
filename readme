@@ -5,6 +5,10 @@ atg is a small, simple GUI library/toolkit for SDL, providing things like button
 atg Event Queue:
 	atg will poll SDL for events, and if these events trigger any atg elements, these elements' events will be placed on the queue.  In any case all SDL events will be placed on the atg queue, in case the application wishes to further process them.  Note that if the application calls SDL_PollEvent() or SDL_WaitEvent(), these events will not be 'seen' by atg.  Thus, the application should instead call atg_poll_event() or atg_wait_event().
 
+A Warning:
+	For some time I've been intending to make some API changes that will break source-level compatibility.  I am now actively pursuing these changes.
+	While it should be fairly easy to rework existing sources to use the new API, it's probably best to hold off until I release, especially as the main motivator for these changes is the prospect of easier and better autogeneration of atg code.
+
 Custom Widgets:
 	atg can be extended with custom widgets.  If a widget's type is ATG_CUSTOM, atg will use its callbacks to render, handle clicks, and free.
 	An example of this is the 'selector' widget created in widget.c.  It consists of a box containing four buttons.  When one of these buttons is clicked, the value is set (written through the "userdata" pointer), and the selected option is highlighted.

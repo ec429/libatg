@@ -244,7 +244,7 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		size_t n=strlen(rv->curdir);
 		while(n&&rv->curdir[n-1]=='/')
 			rv->curdir[--n]=0;
-		char *new=realloc(rv->curdir, n+1);
+		char *new=realloc(rv->curdir, n+2);
 		if(!new)
 		{
 			free(rv->title);

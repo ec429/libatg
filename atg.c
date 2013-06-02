@@ -73,6 +73,7 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas)
 		{
 			SDL_ResizeEvent r=s.resize;
 			atg_resize_canvas(canvas, r.w, r.h);
+			atg_flip(canvas);
 		}
 	}
 	if(atg__ev_list.list)

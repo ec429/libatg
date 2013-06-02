@@ -123,6 +123,7 @@ typedef struct
 {
 	SDL_Surface *surface;
 	atg_box *box;
+	Uint32 flags;
 }
 atg_canvas;
 
@@ -226,6 +227,8 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas);
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour);
 int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h);
+atg_canvas *atg_create_canvas_with_opts(unsigned int w, unsigned int h, atg_colour bgcolour, Uint32 flags);
+int atg_setopts_canvas(atg_canvas *canvas, Uint32 flags);
 atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);

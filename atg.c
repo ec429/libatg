@@ -9,8 +9,15 @@
 #include "atg.h"
 #include "atg_internals.h"
 
-SDL_Surface *gf_init(unsigned int w, unsigned int h)
+static int have_screen=0;
+
+SDL_Surface *gf_init(unsigned int w, unsigned int h, Uint32 flags)
 {
+	if(have_screen)
+	{
+		fprintf(stderr, "gf_init: only one canvas at a time!\n");
+		return(NULL);
+	}
 	SDL_Surface *screen;
 	if(SDL_Init(SDL_INIT_VIDEO)<0)
 	{
@@ -18,11 +25,13 @@ SDL_Surface *gf_init(unsigned int w, unsigned int h)
 		return(NULL);
 	}
 	atexit(SDL_Quit);
-	if(!(screen=SDL_SetVideoMode(w, h, 32, SDL_HWSURFACE)))
+	if(!(screen=SDL_SetVideoMode(w, h, 32, flags)))
 	{
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return(NULL);
 	}
+	have_screen++;
 	return(screen);
 }
 
@@ -75,13 +84,24 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas)
 
 atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolour)
 {
-	SDL_Surface *screen=gf_init(w, h);
+	return(atg_create_canvas_with_opts(w, h, bgcolour, SDL_HWSURFACE));
+}
+
+atg_canvas *atg_create_canvas_with_opts(unsigned int w, unsigned int h, atg_colour bgcolour, Uint32 flags)
+{
+	SDL_Surface *screen=gf_init(w, h, flags);
 	if(!screen) return(NULL);
 	atg_canvas *rv=malloc(sizeof(atg_canvas));
 	if(rv)
 	{
 		rv->surface=screen;
 		rv->box=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
+		rv->flags=flags;
+	}
+	else
+	{
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		have_screen--;
 	}
 	return(rv);
 }
@@ -89,7 +109,7 @@ atg_canvas *atg_create_canvas(unsigned int w, unsigned int h, atg_colour bgcolou
 int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 {
 	if(!canvas) return(1);
-	SDL_Surface *screen=SDL_SetVideoMode(w, h, 32, SDL_HWSURFACE);
+	SDL_Surface *screen=SDL_SetVideoMode(w, h, 32, canvas->flags);
 	if(!screen)
 	{
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
@@ -98,6 +118,21 @@ int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 	canvas->surface=screen;
 	return(0);
 }
+
+int atg_setopts_canvas(atg_canvas *canvas, Uint32 flags)
+{
+	if(!canvas) return(1);
+	SDL_Surface *screen=SDL_SetVideoMode(canvas->surface->w, canvas->surface->h, 32, flags);
+	if(!screen)
+	{
+		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
+		return(2);
+	}
+	canvas->flags=flags;
+	canvas->surface=screen;
+	return(0);
+}
+
 
 int atg_pack_element(atg_box *box, atg_element *elem)
 {

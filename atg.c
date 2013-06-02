@@ -69,6 +69,11 @@ int atg_poll_event(atg_event *event, atg_canvas *canvas)
 		{
 			atg__match_click(&atg__ev_list, canvas, s.button);
 		}
+		else if(s.type==SDL_VIDEORESIZE)
+		{
+			SDL_ResizeEvent r=s.resize;
+			atg_resize_canvas(canvas, r.w, r.h);
+		}
 	}
 	if(atg__ev_list.list)
 	{

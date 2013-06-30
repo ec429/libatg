@@ -40,8 +40,11 @@ SDL_Surface *atg_resize_surface(SDL_Surface *src, const atg_element *e)
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, e->w?(int)e->w:src->w, e->h?(int)e->h:src->h, src->format->BitsPerPixel, src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask);
 	if(!rv) return(NULL);
 	SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, 0, 0, 0, SDL_ALPHA_TRANSPARENT));
+	bool srcalpha=src->flags&SDL_SRCALPHA;
+	Uint8 alpha=src->format->alpha;
 	SDL_SetAlpha(src, 0, SDL_ALPHA_OPAQUE);
 	SDL_BlitSurface(src, NULL, rv, NULL);
+	SDL_SetAlpha(src, srcalpha?SDL_SRCALPHA:0, alpha);
 	return(rv);
 }
 

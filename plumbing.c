@@ -87,6 +87,7 @@ int atg__push_event(struct atg_event_list *list, atg_event event)
 void atg__match_click_recursive(struct atg_event_list *list, atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
 	if(!element) return;
+	if(element->hidden) return;
 	if(
 		(button.x>=element->display.x+xoff)
 		&&(button.x<element->display.x+xoff+element->display.w)

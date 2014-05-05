@@ -124,6 +124,7 @@ int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 		fprintf(stderr, "SDL_SetVideoMode: %s\n", SDL_GetError());
 		return(2);
 	}
+	SDL_FreeSurface(canvas->surface);
 	canvas->surface=screen;
 	return(0);
 }

@@ -9,23 +9,22 @@
 #include "atg_internals.h"
 #include <string.h>
 
+#define VALUE_LEN	32
+
 SDL_Surface *atg_render_spinner(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_SPINNER)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_spinner *s=e->elem.spinner;
+	atg_spinner *s=e->elemdata;
 	if(!s) return(NULL);
 	atg_box *b=s->content;
 	if(!b) return(NULL);
-	if(b->nelems&&b->elems[0]&&b->elems[0]->type==ATG_LABEL)
+	if(b->nelems&&b->elems[0]&&!strcmp(b->elems[0]->type, "__builtin_label"))
 	{
-		atg_label *l=b->elems[0]->elem.label;
-		free(l->text);
-		l->text=malloc(32);
+		atg_label *l=b->elems[0]->elemdata;
 		if(l->text)
-			snprintf(l->text, 32, s->fmt, s->value);
+			snprintf(l->text, VALUE_LEN, s->fmt, s->value);
 	}
-	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=s->content, .clickable=false, .userdata=NULL});
+	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .elemdata=s->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w, content->h, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
 	if(!rv)
@@ -41,7 +40,7 @@ SDL_Surface *atg_render_spinner(const atg_element *e)
 
 void atg_click_spinner(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
-	atg_spinner *s=element->elem.spinner;
+	atg_spinner *s=element->elemdata;
 	if(!s) return;
 	atg_box *b=s->content;
 	if(!b) return;
@@ -68,18 +67,18 @@ void atg_click_spinner(struct atg_event_list *list, struct atg_element *element,
 				if((event.event.trigger.button==ATG_MB_LEFT)||(event.event.trigger.button==ATG_MB_RIGHT))
 				{
 					atg_element *e=event.event.trigger.e;
-					if(e&&e->type==ATG_BUTTON)
+					if(e&&!strcmp(e->type, "__builtin_button"))
 					{
-						atg_button *b=e->elem.button;
+						atg_button *b=e->elemdata;
 						if(b)
 						{
 							atg_box *box=b->content;
 							if(box&&box->nelems&&box->elems)
 							{
 								atg_element *e=box->elems[0];
-								if(e&&e->type==ATG_LABEL)
+								if(e&&!strcmp(e->type, "__builtin_label"))
 								{
-									atg_label *l=e->elem.label;
+									atg_label *l=e->elemdata;
 									if(l&&l->text)
 									{
 										if(strcmp(l->text, "+")==0)
@@ -141,18 +140,27 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 			free(rv);
 			return(NULL);
 		}
-		char val[32];
-		snprintf(val, sizeof(val), rv->fmt, rv->value);
-		atg_element *lbl=atg_create_element_label(val, 15, fgcolour);
+		char *val=malloc(VALUE_LEN);
+		if(!val)
+		{
+			free(rv);
+			return(NULL);
+		}
+		snprintf(val, VALUE_LEN, rv->fmt, rv->value);
+		atg_element *lbl=atg_create_element_label(NULL, 15, fgcolour);
 		if(!lbl)
 		{
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
+		atg_label *l=lbl->elemdata;
+		l->text=val;
 		if(atg_pack_element(rv->content, lbl))
 		{
 			atg_free_element(lbl);
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -160,6 +168,7 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		atg_element *vbox=atg_create_element_box(ATG_BOX_PACK_VERTICAL, bgcolour);
 		if(!vbox)
 		{
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -167,118 +176,72 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_pack_element(rv->content, vbox))
 		{
 			atg_free_element(vbox);
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		atg_box *v=vbox->elem.box;
-		if(!v)
-		{
-			atg_free_box_box(rv->content);
-			free(rv);
-			return(NULL);
-		}
-		atg_element *ubtn=atg_create_element_button("+", fgcolour, bgcolour);
+		atg_element *ubtn=atg_create_element_button_empty(fgcolour, bgcolour);
 		if(!ubtn)
 		{
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		atg_button *ub=ubtn->elem.button;
-		if(ub)
-		{
-			atg_box *b=ub->content;
-			if(b&&b->nelems)
-			{
-				atg_element *e=b->elems[0];
-				if(e&&e->type==ATG_LABEL)
-				{
-					atg_label *l=e->elem.label;
-					if(l)
-					{
-						l->fontsize=7;
-					}
-				}
-			}
-		}
-		if(atg_pack_element(v, ubtn))
+		atg_element *ulbl=atg_create_element_label("+", 7, fgcolour);
+		if(!ulbl)
 		{
 			atg_free_element(ubtn);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		atg_element *dbtn=atg_create_element_button("-", fgcolour, bgcolour);
-		if(!dbtn)
+		if(atg_ebox_pack(vbox, ubtn))
 		{
+			atg_free_element(ubtn);
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		atg_button *db=dbtn->elem.button;
-		if(db)
+		atg_element *dbtn=atg_create_element_button_empty(fgcolour, bgcolour);
+		if(!dbtn)
 		{
-			atg_box *b=db->content;
-			if(b&&b->nelems)
-			{
-				atg_element *e=b->elems[0];
-				if(e&&e->type==ATG_LABEL)
-				{
-					atg_label *l=e->elem.label;
-					if(l)
-					{
-						l->fontsize=7;
-					}
-				}
-			}
+			free(val);
+			atg_free_box_box(rv->content);
+			free(rv);
+			return(NULL);
 		}
-		if(atg_pack_element(v, dbtn))
+		atg_element *dlbl=atg_create_element_label("-", 7, fgcolour);
+		if(!dlbl)
 		{
 			atg_free_element(dbtn);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
+		if(atg_ebox_pack(vbox, dbtn))
+		{
+			atg_free_element(dbtn);
+			free(val);
+			atg_free_box_box(rv->content);
+			free(rv);
+			return(NULL);
+		}
 	}
-	return(rv);
-}
-
-atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour)
-{
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	atg_spinner *s=atg_create_spinner(flags, minval, maxval, step, initvalue, fmt, fgcolour, bgcolour);
-	if(!s)
-	{
-		free(rv);
-		return(NULL);
-	}
-	rv->w=rv->h=0;
-	rv->type=ATG_SPINNER;
-	rv->elem.spinner=s;
-	rv->clickable=false; /* because it generates ATG_EV_VALUE events instead */
-	rv->hidden=false;
-	rv->cache=false;
-	rv->cached=NULL;
-	rv->userdata=NULL;
-	rv->render_callback=atg_render_spinner;
-	rv->match_click_callback=atg_click_spinner;
-	rv->copy_callback=atg_copy_spinner;
-	rv->free_callback=atg_free_spinner;
 	return(rv);
 }
 
 atg_element *atg_copy_spinner(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_SPINNER)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_spinner *s=e->elem.spinner;
+	atg_spinner *s=e->elemdata;
 	if(!s) return(NULL);
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
 	*rv=*e;
-	atg_spinner *s2=rv->elem.spinner=malloc(sizeof(atg_spinner));
+	atg_spinner *s2=rv->elemdata=malloc(sizeof(atg_spinner));
 	if(!s2)
 	{
 		free(rv);
@@ -293,10 +256,37 @@ atg_element *atg_copy_spinner(const atg_element *e)
 void atg_free_spinner(atg_element *e)
 {
 	if(!e) return;
-	atg_spinner *spinner=e->elem.spinner;
+	atg_spinner *spinner=e->elemdata;
 	if(spinner)
 	{
+		free(spinner->fmt);
 		atg_free_box_box(spinner->content);
 	}
 	free(spinner);
+}
+
+atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int step, int initvalue, const char *fmt, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_spinner *s=atg_create_spinner(flags, minval, maxval, step, initvalue, fmt, fgcolour, bgcolour);
+	if(!s)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type="__builtin_spinner";
+	rv->elemdata=s;
+	rv->clickable=false; /* because it generates ATG_EV_VALUE events instead */
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_spinner;
+	rv->match_click_callback=atg_click_spinner;
+	rv->pack_callback=NULL;
+	rv->copy_callback=atg_copy_spinner;
+	rv->free_callback=atg_free_spinner;
+	return(rv);
 }

@@ -52,10 +52,10 @@ void atg_flip(atg_canvas *canvas)
 {
 	if(!canvas) return;
 	if(!canvas->surface) return;
-	if(!canvas->box) return;
-	SDL_Surface *box=atg_render_box(&(atg_element){.w=canvas->surface->w, .h=canvas->surface->h, .type=ATG_BOX, .elem.box=canvas->box, .clickable=true, .userdata=NULL});
-	SDL_BlitSurface(box, NULL, canvas->surface, NULL);
-	SDL_FreeSurface(box);
+	if(!canvas->content) return;
+	SDL_Surface *content=atg_render_element(canvas->content);
+	SDL_BlitSurface(content, NULL, canvas->surface, NULL);
+	SDL_FreeSurface(content);
 	SDL_Flip(canvas->surface);
 }
 
@@ -104,8 +104,18 @@ atg_canvas *atg_create_canvas_with_opts(unsigned int w, unsigned int h, atg_colo
 	if(rv)
 	{
 		rv->surface=screen;
-		rv->box=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
-		rv->flags=flags;
+		if((rv->content=atg_create_element_box(ATG_BOX_PACK_VERTICAL, bgcolour)))
+		{
+			rv->content->w=w;
+			rv->content->h=h;
+			rv->flags=flags;
+		}
+		else
+		{
+			free(rv);
+			SDL_QuitSubSystem(SDL_INIT_VIDEO);
+			have_screen--;
+		}
 	}
 	else
 	{
@@ -143,43 +153,12 @@ int atg_setopts_canvas(atg_canvas *canvas, Uint32 flags)
 	return(0);
 }
 
-
-int atg_pack_element(atg_box *box, atg_element *elem)
-{
-	if(!box) return(1);
-	unsigned int n=box->nelems++;
-	atg_element **new=realloc(box->elems, box->nelems*sizeof(atg_element *));
-	if(new)
-	{
-		(box->elems=new)[n]=elem;
-		return(0);
-	}
-	box->nelems=n;
-	return(1);
-}
-
 int atg_ebox_pack(atg_element *ebox, atg_element *elem)
 {
 	if(!ebox) return(1);
-	atg_box *b;
-	switch(ebox->type)
-	{
-		case ATG_BOX:
-			b=ebox->elem.box;
-		break;
-		case ATG_BUTTON:
-		{
-			atg_button *btn=ebox->elem.button;
-			if(btn)
-				b=btn->content;
-			else
-				return(1);
-		}
-		break;
-		default:
-			return(1);
-	}
-	return(atg_pack_element(b, elem));
+	if(ebox->pack_callback)
+		return(ebox->pack_callback(ebox, elem));
+	return(2);
 }
 
 void atg_free_canvas(atg_canvas *canvas)
@@ -187,7 +166,7 @@ void atg_free_canvas(atg_canvas *canvas)
 	if(canvas)
 	{
 		SDL_FreeSurface(canvas->surface);
-		atg_free_box_box(canvas->box);
+		atg_free_element(canvas->content);
 	}
 	free(canvas);
 }

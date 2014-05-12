@@ -18,36 +18,8 @@ SDL_Surface *atg_render_element(atg_element *e)
 		return(e->cached);
 	}
 	SDL_Surface *rv=NULL;
-	switch(e->type)
-	{
-		case ATG_BOX:
-			rv=atg_render_box(e);
-		break;
-		case ATG_LABEL:
-			rv=atg_render_label(e);
-		break;
-		case ATG_IMAGE:
-			rv=atg_render_image(e);
-		break;
-		case ATG_BUTTON:
-			rv=atg_render_button(e);
-		break;
-		case ATG_SPINNER:
-			rv=atg_render_spinner(e);
-		break;
-		case ATG_TOGGLE:
-			rv=atg_render_toggle(e);
-		break;
-		case ATG_FILEPICKER:
-			rv=atg_render_filepicker(e);
-		break;
-		case ATG_CUSTOM:
-			if(e->render_callback)
-				rv=e->render_callback(e);
-		break;
-		default:
-		break;
-	}
+	if(e->render_callback)
+		rv=e->render_callback(e);
 	if(e->cache)
 	{
 		e->cached=rv;
@@ -108,111 +80,34 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 			click.button=button.button;
 			atg__push_event(list, (atg_event){.type=ATG_EV_CLICK, .event.click=click});
 		}
-		switch(element->type)
-		{
-			case ATG_BOX:
-				atg_click_box(list, element, button, xoff, yoff);
-			break;
-			case ATG_BUTTON:
-				atg_click_button(list, element, button, xoff, yoff);
-			break;
-			case ATG_SPINNER:
-				atg_click_spinner(list, element, button, xoff, yoff);
-			break;
-			case ATG_TOGGLE:
-				atg_click_toggle(list, element, button, xoff, yoff);
-			break;
-			case ATG_FILEPICKER:
-				atg_click_filepicker(list, element, button, xoff, yoff);
-			break;
-			case ATG_CUSTOM:
-				if(element->match_click_callback)
-					element->match_click_callback(list, element, button, xoff, yoff);
-				/* fallthrough */
-			default:
-				/* ignore */
-			break;
-		}
+		if(element->match_click_callback)
+			element->match_click_callback(list, element, button, xoff, yoff);
 	}
 }
 
 void atg__match_click(struct atg_event_list *list, atg_canvas *canvas, SDL_MouseButtonEvent button)
 {
 	if(!canvas) return;
-	if(!canvas->box) return;
-	atg_box *b=canvas->box;
-	if(!b->elems) return;
-	for(unsigned int i=0;i<b->nelems;i++)
-		atg__match_click_recursive(list, b->elems[i], button, 0, 0);
+	atg__match_click_recursive(list, canvas->content, button, 0, 0);
 }
 
 atg_element *atg_copy_element(const atg_element *e)
 {
 	if(!e) return(NULL);
-	switch(e->type)
-	{
-		case ATG_BOX:
-			return(atg_copy_box(e));
-		case ATG_LABEL:
-			return(atg_copy_label(e));
-		case ATG_IMAGE:
-			return(atg_copy_image(e));
-		case ATG_BUTTON:
-			return(atg_copy_button(e));
-		case ATG_SPINNER:
-			return(atg_copy_spinner(e));
-		case ATG_TOGGLE:
-			return(atg_copy_toggle(e));
-		case ATG_FILEPICKER:
-			return(atg_copy_filepicker(e));
-		case ATG_CUSTOM:
-			if(e->copy_callback)
-				return(e->copy_callback(e));
-		default:
-			return(NULL);
-	}
+	if(e->copy_callback)
+		return(e->copy_callback(e));
+	return(NULL);
 }
 
 void atg_free_element(atg_element *element)
 {
 	if(element)
 	{
-		switch(element->type)
-		{
-			case ATG_BOX:
-				atg_free_box(element);
-			break;
-			case ATG_LABEL:
-				atg_free_label(element);
-			break;
-			case ATG_IMAGE:
-				atg_free_image(element);
-			break;
-			case ATG_BUTTON:
-				atg_free_button(element);
-			break;
-			case ATG_SPINNER:
-				atg_free_spinner(element);
-			break;
-			case ATG_TOGGLE:
-				atg_free_toggle(element);
-			break;
-			case ATG_FILEPICKER:
-				atg_free_filepicker(element);
-			break;
-			case ATG_CUSTOM:
-				if(element->free_callback)
-				{
-					element->free_callback(element);
-					break;
-				}
-				/* fallthrough */
-			default:
-				/* Bad things */
-				fprintf(stderr, "Don't know how to free element of type %d, very bad things!\n", element->type);
-			break;
-		}
+		if(element->free_callback)
+			element->free_callback(element);
+		else /* Bad things */
+			fprintf(stderr, "Don't know how to free element of type %s at %p, very bad things!\n", element->type, (void *)element);
+		SDL_FreeSurface(element->cached);
 	}
-	SDL_FreeSurface(element->cached);
 	free(element);
 }

@@ -19,19 +19,19 @@ int main(void)
 		fprintf(stderr, "atg_create_canvas failed\n");
 		return(1);
 	}
-	atg_box *mainbox=canvas->box;
+	atg_element *mainbox=canvas->content;
 	atg_element *hello=atg_create_element_label("Hello World!", 12, (atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE});
 	if(hello)
 	{
-		if(atg_pack_element(mainbox, hello))
+		if(atg_ebox_pack(mainbox, hello))
 		{
-			perror("atg_pack_element");
+			perror("atg_ebox_pack");
 			return(1);
 		}
 		for(unsigned int i=0;i<21;i++)
-			if(atg_pack_element(mainbox, atg_copy_element(hello)))
+			if(atg_ebox_pack(mainbox, atg_copy_element(hello)))
 			{
-				perror("atg_pack_element");
+				perror("atg_ebox_pack");
 				return(1);
 			}
 		hello->clickable=true;
@@ -44,9 +44,9 @@ int main(void)
 	atg_element *spin=atg_create_element_spinner(ATG_SPINNER_RIGHTCLICK_STEP10, 0, 100, 1, 10, "%03d", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(spin)
 	{
-		if(atg_pack_element(mainbox, spin))
+		if(atg_ebox_pack(mainbox, spin))
 		{
-			perror("atg_pack_element");
+			perror("atg_ebox_pack");
 			return(1);
 		}
 	}
@@ -60,9 +60,9 @@ int main(void)
 	{
 		fp->cache=true;
 		fp->h=460;
-		if(atg_pack_element(mainbox, fp))
+		if(atg_ebox_pack(mainbox, fp))
 		{
-			perror("atg_pack_element");
+			perror("atg_ebox_pack");
 			return(1);
 		}
 	}
@@ -74,23 +74,17 @@ int main(void)
 	atg_element *bbox=atg_create_element_box(ATG_BOX_PACK_HORIZONTAL, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE}), *Stat=NULL, *Clear=NULL;
 	if(bbox)
 	{
-		if(atg_pack_element(mainbox, bbox))
+		if(atg_ebox_pack(mainbox, bbox))
 		{
-			perror("atg_pack_element");
-			return(1);
-		}
-		atg_box *b=bbox->elem.box;
-		if(!b)
-		{
-			fprintf(stderr, "bbox->elem.box==NULL!\n");
+			perror("atg_ebox_pack");
 			return(1);
 		}
 		Stat=atg_create_element_button("Stat", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 		if(Stat)
 		{
-			if(atg_pack_element(b, Stat))
+			if(atg_ebox_pack(bbox, Stat))
 			{
-				perror("atg_pack_element");
+				perror("atg_ebox_pack");
 				return(1);
 			}
 		}
@@ -102,9 +96,9 @@ int main(void)
 		Clear=atg_create_element_button("Clear", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 		if(Clear)
 		{
-			if(atg_pack_element(b, Clear))
+			if(atg_ebox_pack(bbox, Clear))
 			{
-				perror("atg_pack_element");
+				perror("atg_ebox_pack");
 				return(1);
 			}
 		}
@@ -122,9 +116,9 @@ int main(void)
 	atg_element *go=atg_create_element_button("Go!", (atg_colour){255, 255, 255, ATG_ALPHA_OPAQUE}, (atg_colour){47, 47, 47, ATG_ALPHA_OPAQUE});
 	if(go)
 	{
-		if(atg_pack_element(mainbox, go))
+		if(atg_ebox_pack(mainbox, go))
 		{
-			perror("atg_pack_element");
+			perror("atg_ebox_pack");
 			return(1);
 		}
 	}
@@ -140,29 +134,33 @@ int main(void)
 	unsigned int colcycle=0;
 	while(!errupt)
 	{
-		if(going&&mainbox&&mainbox->elems)
+		if(going&&mainbox)
 		{
-			for(unsigned int i=0;i<mainbox->nelems;i++)
+			atg_box *mb=mainbox->elemdata;
+			if(mb&&mb->nelems&&mb->elems)
 			{
-				atg_element *e=mainbox->elems[i];
-				if(e&&(e->type==ATG_LABEL))
+				for(unsigned int i=0;i<mb->nelems;i++)
 				{
-					atg_label *l=e->elem.label;
-					if(l)
+					atg_element *e=mb->elems[i];
+					if(e&&!strcmp(e->type, "__builtin_label"))
 					{
-						switch(colcycle)
+						atg_label *l=e->elemdata;
+						if(l)
 						{
-							case 0:
-								l->colour=(atg_colour){255, 255, 127, ATG_ALPHA_OPAQUE};
-							break;
-							case 1:
-								l->colour=(atg_colour){127, 255, 255, ATG_ALPHA_OPAQUE};
-							break;
-							case 2:
-								l->colour=(atg_colour){255, 127, 255, ATG_ALPHA_OPAQUE};
-							break;
+							switch(colcycle)
+							{
+								case 0:
+									l->colour=(atg_colour){255, 255, 127, ATG_ALPHA_OPAQUE};
+								break;
+								case 1:
+									l->colour=(atg_colour){127, 255, 255, ATG_ALPHA_OPAQUE};
+								break;
+								case 2:
+									l->colour=(atg_colour){255, 127, 255, ATG_ALPHA_OPAQUE};
+								break;
+							}
+							colcycle=(colcycle+1)%3;
 						}
-						colcycle=(colcycle+1)%3;
 					}
 				}
 			}
@@ -185,29 +183,28 @@ int main(void)
 					atg_ev_click click=e.event.click;
 					if(click.e)
 					{
-						switch(click.e->type)
+						if(!strcmp(click.e->type, "__builtin_label"))
 						{
-							case ATG_LABEL:;
-								atg_label *l=click.e->elem.label;
-								if(l)
+							atg_label *l=click.e->elemdata;
+							if(l)
+							{
+								switch(click.button)
 								{
-									switch(click.button)
-									{
-										case ATG_MB_LEFT:
-											l->colour=(atg_colour){0, 255, 0, ATG_ALPHA_OPAQUE};
-										break;
-										case ATG_MB_RIGHT:
-											l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
-										break;
-										default:
-											l->colour=(atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE};
-										break;
-									}
+									case ATG_MB_LEFT:
+										l->colour=(atg_colour){0, 255, 0, ATG_ALPHA_OPAQUE};
+									break;
+									case ATG_MB_RIGHT:
+										l->colour=(atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE};
+									break;
+									default:
+										l->colour=(atg_colour){255, 255, 0, ATG_ALPHA_OPAQUE};
+									break;
 								}
-							break;
-							default:
-								fprintf(stderr, "Clicked on an element.type==%u\n", click.e->type);
-							break;
+							}
+						}
+						else
+						{
+							fprintf(stderr, "Clicked on an element.type==%s\n", click.e->type);
 						}
 					}
 					else
@@ -226,8 +223,8 @@ int main(void)
 								stop=atg_create_element_button("Stop!", (atg_colour){255, 63, 0, ATG_ALPHA_OPAQUE}, (atg_colour){0, 15, 47, ATG_ALPHA_OPAQUE});
 								if(stop)
 								{
-									if(atg_pack_element(mainbox, stop))
-										perror("atg_pack_element");
+									if(atg_ebox_pack(mainbox, stop))
+										perror("atg_ebox_pack");
 									else
 										going=true;
 								}
@@ -244,7 +241,7 @@ int main(void)
 						}
 						else if(trigger.e==Stat)
 						{
-							atg_filepicker *f=fp->elem.filepicker;
+							atg_filepicker *f=fp->elemdata;
 							if(f&&f->curdir)
 							{
 								if(f->value)
@@ -271,7 +268,7 @@ int main(void)
 						}
 						else if(trigger.e==Clear)
 						{
-							atg_filepicker *f=fp->elem.filepicker;
+							atg_filepicker *f=fp->elemdata;
 							if(f&&f->value)
 							{
 								free(f->value);
@@ -298,7 +295,7 @@ int main(void)
 						}
 						else if(value.e==fp)
 						{
-							atg_filepicker *f=fp->elem.filepicker;
+							atg_filepicker *f=fp->elemdata;
 							if(f&&f->curdir)
 							{
 								if(f->value)

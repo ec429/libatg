@@ -29,20 +29,6 @@
 #define ATG_ALPHA_TRANSPARENT	SDL_ALPHA_TRANSPARENT
 #define ATG_ALPHA_OPAQUE		SDL_ALPHA_OPAQUE
 
-typedef enum
-{
-	ATG_BOX,
-	ATG_LABEL,
-	ATG_IMAGE,
-	ATG_BUTTON,
-	ATG_SPINNER,
-	ATG_TOGGLE,
-	ATG_FILEPICKER,
-	
-	ATG_CUSTOM=255,
-}
-atg_type;
-
 typedef struct
 {
 	int x;
@@ -55,6 +41,30 @@ typedef struct
 	Uint8 r,g,b,a;
 }
 atg_colour;
+
+struct atg_event_list
+{
+	struct atg__event_list *list, *last;
+};
+
+typedef struct atg_element
+{
+	unsigned int w, h; /* width and height (0 for either means "shrink around contents") */
+	SDL_Rect display; /* co-ordinates within containing box */
+	SDL_Surface *(*render_callback)(const struct atg_element *e);
+	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
+	int (*pack_callback)(struct atg_element *e, struct atg_element *f);
+	struct atg_element *(*copy_callback)(const struct atg_element *e);
+	void (*free_callback)(struct atg_element *e);
+	const char *type;
+	void *elemdata; /* Interpretation depends on type; is freed by atg_free_element() */
+	bool clickable;
+	bool hidden;
+	bool cache;
+	SDL_Surface *cached;
+	void *userdata; /* normally NULL; is not freed by atg_free_element() */
+}
+atg_element;
 
 typedef struct
 {
@@ -109,7 +119,7 @@ typedef struct
 	char *title;
 	char *curdir;
 	char *value;
-	atg_colour fgcolour, bgcolour;
+	atg_colour fgcolour;
 	atg_box *content;
 	/*
 	** To construct the filepath use:
@@ -122,41 +132,10 @@ atg_filepicker;
 typedef struct
 {
 	SDL_Surface *surface;
-	atg_box *box;
+	atg_element *content;
 	Uint32 flags;
 }
 atg_canvas;
-
-struct atg_event_list
-{
-	struct atg__event_list *list, *last;
-};
-
-typedef struct atg_element
-{
-	unsigned int w, h; /* width and height (0 for either means "shrink around contents") */
-	SDL_Rect display; /* co-ordinates within containing box */
-	SDL_Surface *(*render_callback)(const struct atg_element *e);
-	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
-	struct atg_element *(*copy_callback)(const struct atg_element *e);
-	void (*free_callback)(struct atg_element *e);
-	atg_type type;
-	union {
-		atg_box *box;
-		atg_label *label;
-		atg_image *image;
-		atg_button *button;
-		atg_spinner *spinner;
-		atg_toggle *toggle;
-		atg_filepicker *filepicker;
-	} elem;
-	bool clickable;
-	bool hidden;
-	bool cache;
-	SDL_Surface *cached;
-	void *userdata; /* normally NULL; is not freed by atg_free_element() */
-}
-atg_element;
 
 typedef enum
 {
@@ -240,7 +219,7 @@ atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int
 atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour);
 
-int atg_pack_element(atg_box *box, atg_element *elem);
+int atg_pack_element(atg_box *box, atg_element *elem); /* Old interface, deprecated */
 int atg_ebox_pack(atg_element *ebox, atg_element *elem);
 atg_element *atg_copy_element(const atg_element *e);
 

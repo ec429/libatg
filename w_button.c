@@ -11,10 +11,9 @@
 SDL_Surface *atg_render_button(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_button *b=e->elem.button;
+	atg_button *b=e->elemdata;
 	if(!b) return(NULL);
-	SDL_Surface *content=atg_render_box(&(atg_element){.w=(e->w>4)?e->w-4:0, .h=(e->h>4)?e->h-4:0, .type=ATG_BOX, .elem.box=b->content, .clickable=false, .userdata=NULL});
+	SDL_Surface *content=atg_render_box(&(atg_element){.w=(e->w>4)?e->w-4:0, .h=(e->h>4)?e->h-4:0, .elemdata=b->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	bool borders=(content->w>8)&&(content->h>4);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w+(borders?4:0), content->h+(borders?4:0), content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
@@ -98,6 +97,45 @@ atg_button *atg_create_button_empty(atg_colour fgcolour, atg_colour bgcolour)
 	return(rv);
 }
 
+int atg_pack_button(atg_element *ebox, atg_element *elem)
+{
+	atg_button *button=ebox->elemdata;
+	if(!button)
+		return(1);
+	atg_box *b=button->content;
+		return(atg_pack_element(b, elem));
+}
+
+atg_element *atg_copy_button(const atg_element *e)
+{
+	if(!e) return(NULL);
+	atg_button *button=e->elemdata;
+	if(!button) return(NULL);
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	*rv=*e;
+	atg_button *button2=rv->elemdata=malloc(sizeof(atg_button));
+	if(!button2)
+	{
+		free(rv);
+		return(NULL);
+	}
+	*button2=*button;
+	button2->content=button->content?atg_copy_box_box(button->content):NULL;
+	return(rv);
+}
+
+void atg_free_button(atg_element *e)
+{
+	if(!e) return;
+	atg_button *button=e->elemdata;
+	if(button)
+	{
+		atg_free_box_box(button->content);
+	}
+	free(button);
+}
+
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
@@ -109,8 +147,8 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 		return(NULL);
 	}
 	rv->w=rv->h=0;
-	rv->type=ATG_BUTTON;
-	rv->elem.button=b;
+	rv->type="__builtin_button";
+	rv->elemdata=b;
 	rv->clickable=false; /* because it generates ATG_EV_TRIGGER events instead */
 	rv->hidden=false;
 	rv->cache=false;
@@ -118,6 +156,7 @@ atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, a
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_button;
 	rv->match_click_callback=atg_click_button;
+	rv->pack_callback=atg_pack_button;
 	rv->copy_callback=atg_copy_button;
 	rv->free_callback=atg_free_button;
 	return(rv);
@@ -134,8 +173,8 @@ atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgc
 		return(NULL);
 	}
 	rv->w=rv->h=0;
-	rv->type=ATG_BUTTON;
-	rv->elem.button=b;
+	rv->type="__builtin_button";
+	rv->elemdata=b;
 	rv->clickable=false; /* because it generates ATG_EV_TRIGGER events instead */
 	rv->hidden=false;
 	rv->cache=false;
@@ -143,38 +182,8 @@ atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgc
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_button;
 	rv->match_click_callback=atg_click_button;
+	rv->pack_callback=atg_pack_button;
 	rv->copy_callback=atg_copy_button;
 	rv->free_callback=atg_free_button;
 	return(rv);
-}
-
-atg_element *atg_copy_button(const atg_element *e)
-{
-	if(!e) return(NULL);
-	if(!((e->type==ATG_BUTTON)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_button *b=e->elem.button;
-	if(!b) return(NULL);
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	*rv=*e;
-	atg_button *b2=rv->elem.button=malloc(sizeof(atg_button));
-	if(!b2)
-	{
-		free(rv);
-		return(NULL);
-	}
-	*b2=*b;
-	b2->content=b->content?atg_copy_box_box(b->content):NULL;
-	return(rv);
-}
-
-void atg_free_button(atg_element *e)
-{
-	if(!e) return;
-	atg_button *button=e->elem.button;
-	if(button)
-	{
-		atg_free_box_box(button->content);
-	}
-	free(button);
 }

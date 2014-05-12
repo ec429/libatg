@@ -62,23 +62,22 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 	return(NULL);
 #else // !WINDOWS
 	if(!e) return(NULL);
-	if(!((e->type==ATG_FILEPICKER)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_filepicker *f=e->elem.filepicker;
+	atg_filepicker *f=e->elemdata;
 	if(!f) return(NULL);
 	if(!f->curdir) return(NULL);
 	atg_box *b=f->content;
 	if(!b) return(NULL);
-	if(b->nelems>1&&b->elems[1]&&b->elems[1]->type==ATG_LABEL)
+	if(b->nelems>1&&b->elems[1]&&!strcmp(b->elems[1]->type, "__builtin_label"))
 	{
-		atg_label *l=b->elems[1]->elem.label;
+		atg_label *l=b->elems[1]->elemdata;
 		free(l->text);
 		l->text=strdup(f->curdir);
 	}
-	if(b->nelems>2&&b->elems[2]&&b->elems[2]->type==ATG_BOX)
+	if(b->nelems>2&&b->elems[2]&&!strcmp(b->elems[2]->type, "__builtin_box"))
 	{
 		b->elems[2]->h=(e->h>28)?e->h-28:0;
-		atg_free_box_box(b->elems[2]->elem.box);
-		atg_box *b2=b->elems[2]->elem.box=atg_create_box(ATG_BOX_PACK_VERTICAL, f->bgcolour);
+		atg_free_box_box(b->elems[2]->elemdata);
+		atg_box *b2=b->elems[2]->elemdata=atg_create_box(ATG_BOX_PACK_VERTICAL, b->bgcolour);
 		if(!b2) return(NULL);
 		struct dirent **dirs, **files, **stats;
 		filters_dir=f->curdir;
@@ -108,7 +107,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 			size_t l=strlen(dirs[n]->d_name);
 			char lbl[l+2];
 			snprintf(lbl, l+2, "%s/", dirs[n]->d_name);
-			atg_element *btn=atg_create_element_button(lbl, f->fgcolour, f->bgcolour);
+			atg_element *btn=atg_create_element_button(lbl, f->fgcolour, b->bgcolour);
 			if(btn)
 				atg_pack_element(b2, btn);
 			free(dirs[n]);
@@ -117,7 +116,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		for(int n=0;n<nfiles;n++)
 		{
 			bool sel=f->value&&!strcmp(files[n]->d_name, f->value);
-			atg_element *btn=atg_create_element_button(files[n]->d_name, sel?f->bgcolour:f->fgcolour, sel?f->fgcolour:f->bgcolour);
+			atg_element *btn=atg_create_element_button(files[n]->d_name, sel?b->bgcolour:f->fgcolour, sel?f->fgcolour:b->bgcolour);
 			if(btn)
 				atg_pack_element(b2, btn);
 			free(files[n]);
@@ -135,7 +134,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		}
 		free(stats);
 	}
-	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .type=ATG_BOX, .elem.box=f->content, .clickable=false, .userdata=NULL});
+	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .elemdata=f->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w, content->h, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
 	if(!rv)
@@ -153,7 +152,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 void atg_click_filepicker(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
 #ifndef WINDOWS
-	atg_filepicker *f=element->elem.filepicker;
+	atg_filepicker *f=element->elemdata;
 	if(!f) return;
 	atg_box *b=f->content;
 	if(!b) return;
@@ -167,18 +166,18 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 		if(event.type==ATG_EV_TRIGGER)
 		{
 			atg_element *e=event.event.trigger.e;
-			if(e&&e->type==ATG_BUTTON)
+			if(e&&!strcmp(e->type, "__builtin_button"))
 			{
-				atg_button *btn=e->elem.button;
+				atg_button *btn=e->elemdata;
 				if(btn)
 				{
 					atg_box *box=btn->content;
 					if(box&&box->nelems&&box->elems)
 					{
 						atg_element *e=box->elems[0];
-						if(e&&e->type==ATG_LABEL)
+						if(e&&!strcmp(e->type, "__builtin_label"))
 						{
-							atg_label *l=e->elem.label;
+							atg_label *l=e->elemdata;
 							if(l&&l->text)
 							{
 								size_t n=strlen(l->text);
@@ -256,7 +255,6 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		rv->curdir[n]=0;
 		rv->value=NULL;
 		rv->fgcolour=fgcolour;
-		rv->bgcolour=bgcolour;
 		rv->content=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
 		if(!rv->content)
 		{
@@ -323,41 +321,15 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 	return(rv);
 }
 
-atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour)
-{
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	atg_filepicker *f=atg_create_filepicker(title, dir, fgcolour, bgcolour);
-	if(!f)
-	{
-		free(rv);
-		return(NULL);
-	}
-	rv->w=rv->h=0;
-	rv->type=ATG_FILEPICKER;
-	rv->elem.filepicker=f;
-	rv->clickable=false;
-	rv->hidden=false;
-	rv->cache=false;
-	rv->cached=NULL;
-	rv->userdata=NULL;
-	rv->render_callback=atg_render_filepicker;
-	rv->match_click_callback=atg_click_filepicker;
-	rv->copy_callback=atg_copy_filepicker;
-	rv->free_callback=atg_free_filepicker;
-	return(rv);
-}
-
 atg_element *atg_copy_filepicker(const atg_element *e)
 {
 	if(!e) return(NULL);
-	if(!((e->type==ATG_FILEPICKER)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_filepicker *f=e->elem.filepicker;
+	atg_filepicker *f=e->elemdata;
 	if(!f) return(NULL);
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
 	*rv=*e;
-	atg_filepicker *f2=rv->elem.filepicker=malloc(sizeof(atg_filepicker));
+	atg_filepicker *f2=rv->elemdata=malloc(sizeof(atg_filepicker));
 	if(!f2)
 	{
 		free(rv);
@@ -374,7 +346,7 @@ atg_element *atg_copy_filepicker(const atg_element *e)
 void atg_free_filepicker(atg_element *e)
 {
 	if(!e) return;
-	atg_filepicker *f=e->elem.filepicker;
+	atg_filepicker *f=e->elemdata;
 	if(f)
 	{
 		atg_free_box_box(f->content);
@@ -383,4 +355,30 @@ void atg_free_filepicker(atg_element *e)
 		free(f->value);
 	}
 	free(f);
+}
+
+atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_filepicker *f=atg_create_filepicker(title, dir, fgcolour, bgcolour);
+	if(!f)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type="__builtin_filepicker";
+	rv->elemdata=f;
+	rv->clickable=false;
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_filepicker;
+	rv->match_click_callback=atg_click_filepicker;
+	rv->pack_callback=NULL;
+	rv->copy_callback=atg_copy_filepicker;
+	rv->free_callback=atg_free_filepicker;
+	return(rv);
 }

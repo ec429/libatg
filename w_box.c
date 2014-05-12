@@ -13,8 +13,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 	SDL_Surface *screen=SDL_GetVideoSurface();
 	if(!screen) return(NULL); /* can't find out display format */
 	if(!e) return(NULL);
-	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_box *b=e->elem.box;
+	atg_box *b=e->elemdata;
 	if(!b) return(NULL);
 	SDL_Surface **els=malloc(b->nelems*sizeof(SDL_Surface *)), *rv=NULL;
 	if(!els) return(NULL);
@@ -178,7 +177,7 @@ SDL_Surface *atg_render_box(const atg_element *e)
 
 void atg_click_box(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
-	atg_box *b=element->elem.box;
+	atg_box *b=element->elemdata;
 	if(!b->elems) return;
 	for(unsigned int i=0;i<b->nelems;i++)
 		atg__match_click_recursive(list, b->elems[i], button, xoff+element->display.x, yoff+element->display.y);
@@ -197,46 +196,25 @@ atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour)
 	return(rv);
 }
 
-atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
+int atg_pack_element(atg_box *box, atg_element *elem)
 {
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	atg_box *b=atg_create_box(flags, bgcolour);
-	if(!b)
+	if(!box) return(1);
+	unsigned int n=box->nelems++;
+	atg_element **new=realloc(box->elems, box->nelems*sizeof(atg_element *));
+	if(new)
 	{
-		free(rv);
-		return(NULL);
+		(box->elems=new)[n]=elem;
+		return(0);
 	}
-	rv->w=rv->h=0;
-	rv->type=ATG_BOX;
-	rv->elem.box=b;
-	rv->clickable=false;
-	rv->hidden=false;
-	rv->cache=false;
-	rv->cached=NULL;
-	rv->userdata=NULL;
-	rv->render_callback=atg_render_box;
-	rv->match_click_callback=atg_click_box;
-	rv->copy_callback=atg_copy_box;
-	rv->free_callback=atg_free_box;
-	return(rv);
+	box->nelems=n;
+	return(1);
 }
 
-atg_element *atg_copy_box(const atg_element *e)
+int atg_pack_box(atg_element *ebox, atg_element *elem)
 {
-	if(!e) return(NULL);
-	if(!((e->type==ATG_BOX)||(e->type==ATG_CUSTOM))) return(NULL);
-	atg_box *b=e->elem.box;
-	if(!b) return(NULL);
-	atg_element *rv=malloc(sizeof(atg_element));
-	if(!rv) return(NULL);
-	*rv=*e;
-	if(!(rv->elem.box=atg_copy_box_box(b)))
-	{
-		free(rv);
-		return(NULL);
-	}
-	return(rv);
+	atg_box *b=ebox->elemdata;
+	if(!b) return(1);
+	return(atg_pack_element(b, elem));
 }
 
 atg_box *atg_copy_box_box(const atg_box *b)
@@ -250,10 +228,26 @@ atg_box *atg_copy_box_box(const atg_box *b)
 	return(b2);
 }
 
+atg_element *atg_copy_box(const atg_element *e)
+{
+	if(!e) return(NULL);
+	atg_box *b=e->elemdata;
+	if(!b) return(NULL);
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	*rv=*e;
+	if(!(rv->elemdata=atg_copy_box_box(b)))
+	{
+		free(rv);
+		return(NULL);
+	}
+	return(rv);
+}
+
 void atg_free_box(atg_element *e)
 {
 	if(!e) return;
-	atg_box *box=e->elem.box;
+	atg_box *box=e->elemdata;
 	atg_free_box_box(box);
 }
 
@@ -266,4 +260,30 @@ void atg_free_box_box(atg_box *box)
 		free(box->elems);
 	}
 	free(box);
+}
+
+atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_box *b=atg_create_box(flags, bgcolour);
+	if(!b)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type="__builtin_box";
+	rv->elemdata=b;
+	rv->clickable=false;
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_box;
+	rv->match_click_callback=atg_click_box;
+	rv->pack_callback=atg_pack_box;
+	rv->copy_callback=atg_copy_box;
+	rv->free_callback=atg_free_box;
+	return(rv);
 }

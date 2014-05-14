@@ -189,17 +189,24 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 			free(rv);
 			return(NULL);
 		}
-		atg_element *ulbl=atg_create_element_label("+", 7, fgcolour);
-		if(!ulbl)
+		if(atg_ebox_pack(vbox, ubtn))
 		{
 			atg_free_element(ubtn);
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		if(atg_ebox_pack(vbox, ubtn))
+		atg_element *ulbl=atg_create_element_label("+", 7, fgcolour);
+		if(!ulbl)
 		{
-			atg_free_element(ubtn);
+			atg_free_box_box(rv->content);
+			free(rv);
+			return(NULL);
+		}
+		if(atg_ebox_pack(ubtn, ulbl))
+		{
+			atg_free_element(ulbl);
 			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
@@ -213,17 +220,24 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 			free(rv);
 			return(NULL);
 		}
-		atg_element *dlbl=atg_create_element_label("-", 7, fgcolour);
-		if(!dlbl)
+		if(atg_ebox_pack(vbox, dbtn))
 		{
 			atg_free_element(dbtn);
+			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		if(atg_ebox_pack(vbox, dbtn))
+		atg_element *dlbl=atg_create_element_label("-", 7, fgcolour);
+		if(!dlbl)
 		{
-			atg_free_element(dbtn);
+			atg_free_box_box(rv->content);
+			free(rv);
+			return(NULL);
+		}
+		if(atg_ebox_pack(dbtn, dlbl))
+		{
+			atg_free_element(dlbl);
 			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);

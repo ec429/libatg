@@ -53,6 +53,7 @@ void atg_flip(atg_canvas *canvas)
 	if(!canvas) return;
 	if(!canvas->surface) return;
 	if(!canvas->content) return;
+	canvas->content->display=(SDL_Rect){0, 0, canvas->content->w, canvas->content->h};
 	SDL_Surface *content=atg_render_element(canvas->content);
 	SDL_BlitSurface(content, NULL, canvas->surface, NULL);
 	SDL_FreeSurface(content);

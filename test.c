@@ -11,8 +11,10 @@
 #include "atg.h"
 #include <sys/stat.h>
 
-int main(void)
+int main(int argc, char **argv)
 {
+	(void)argc;
+	(void)argv;
 	atg_canvas *canvas=atg_create_canvas(640, 480, (atg_colour){15, 15, 15, ATG_ALPHA_OPAQUE});
 	if(!canvas)
 	{

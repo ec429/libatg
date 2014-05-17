@@ -2,14 +2,17 @@
 CC := i586-mingw32msvc-gcc
 CFLAGS := -Wall -Wextra -pedantic --std=gnu99 -g -DWINDOWS
 SDL := `/usr/i586-mingw32msvc/bin/sdl-config --libs` -lSDL_ttf
-SDLFLAGS := `/usr/i586-mingw32msvc/bin/sdl-config --cflags`
-OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o
+SDLFLAGS := `/usr/i586-mingw32msvc/bin/sdl-config --cflags` -I/usr/i586-mingw32msvc/include/SDL
+OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o scandir.o
 INCLUDES := atg.h atg_internals.h
 
-all: libatg.dll
+all: libatg.dll test.exe
 
 clean:
 	rm -f libatg.dll *.o
+
+test.exe: test.c atg.h libatg.dll
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test.exe libatg.dll $(SDL)
 
 libatg.dll: $(OBJS)
 	$(CC) -shared -o $@ $(OBJS) $(SDLFLAGS) $(SDL)
@@ -22,6 +25,8 @@ plumbing.o: plumbing.c $(INCLUDES)
 
 w_%.o: w_%.c $(INCLUDES)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<
+
+w_filepicker.o: scandir.o
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<

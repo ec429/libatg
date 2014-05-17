@@ -17,6 +17,13 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef WINDOWS
+#include "scandir.h"
+#define sortfn	alphasort
+#else
+#define sortfn	versionsort
+#endif
+
 #define CWD_BUF_SIZE	4096
 
 static const char *filters_dir;
@@ -58,9 +65,6 @@ static int filter_stats(const struct dirent *d)
 
 SDL_Surface *atg_render_filepicker(const atg_element *e)
 {
-#ifdef WINDOWS
-	return(NULL);
-#else // !WINDOWS
 	if(!e) return(NULL);
 	atg_filepicker *f=e->elemdata;
 	if(!f) return(NULL);
@@ -81,9 +85,9 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		if(!b2) return(NULL);
 		struct dirent **dirs, **files, **stats;
 		filters_dir=f->curdir;
-		int ndirs=scandir(f->curdir, &dirs, filter_dirs, versionsort);
+		int ndirs=scandir(f->curdir, &dirs, filter_dirs, sortfn);
 		if(ndirs==-1) return(NULL);
-		int nfiles=scandir(f->curdir, &files, filter_files, versionsort);
+		int nfiles=scandir(f->curdir, &files, filter_files, sortfn);
 		if(nfiles==-1)
 		{
 			while(ndirs--)
@@ -91,7 +95,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 			free(dirs);
 			return(NULL);
 		}
-		int nstats=scandir(f->curdir, &stats, filter_stats, versionsort);
+		int nstats=scandir(f->curdir, &stats, filter_stats, sortfn);
 		if(nstats==-1)
 		{
 			while(files--)
@@ -146,12 +150,10 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 	SDL_BlitSurface(content, NULL, rv, &(SDL_Rect){.x=0, .y=0});
 	SDL_FreeSurface(content);
 	return(rv);
-#endif // WINDOWS
 }
 
 void atg_click_filepicker(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff)
 {
-#ifndef WINDOWS
 	atg_filepicker *f=element->elemdata;
 	if(!f) return;
 	atg_box *b=f->content;
@@ -218,7 +220,6 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 		free(sub_list.list);
 		sub_list.list=next;
 	}
-#endif // !WINDOWS
 }
 
 atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour)

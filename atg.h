@@ -226,6 +226,7 @@ atg_element *atg_create_element_filepicker(const char *title, const char *dir, a
 
 int atg_pack_element(atg_box *box, atg_element *elem); /* Old interface, deprecated */
 int atg_ebox_pack(atg_element *ebox, atg_element *elem);
+int atg_ebox_empty(atg_element *ebox);
 atg_element *atg_copy_element(const atg_element *e);
 
 void atg_free_canvas(atg_canvas *canvas);

@@ -167,6 +167,13 @@ int atg_ebox_pack(atg_element *ebox, atg_element *elem)
 	return(2);
 }
 
+int atg_ebox_empty(atg_element *ebox)
+{
+	if(!ebox) return(1);
+	if(strcmp(ebox->type, "__builtin_box")) return(2); /* TODO at next API break, add a callback */
+	return(atg_empty_box(ebox->elemdata));
+}
+
 void atg_free_canvas(atg_canvas *canvas)
 {
 	if(canvas)

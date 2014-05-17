@@ -217,6 +217,17 @@ int atg_pack_box(atg_element *ebox, atg_element *elem)
 	return(atg_pack_element(b, elem));
 }
 
+int atg_empty_box(atg_box *box)
+{
+	if(box)
+	{
+		for(unsigned int e=0;e<box->nelems;e++)
+			atg_free_element(box->elems[e]);
+		free(box->elems);
+	}
+	return(0);
+}
+
 atg_box *atg_copy_box_box(const atg_box *b)
 {
 	atg_box *b2=malloc(sizeof(atg_box));
@@ -253,12 +264,7 @@ void atg_free_box(atg_element *e)
 
 void atg_free_box_box(atg_box *box)
 {
-	if(box)
-	{
-		for(unsigned int e=0;e<box->nelems;e++)
-			atg_free_element(box->elems[e]);
-		free(box->elems);
-	}
+	atg_empty_box(box);
 	free(box);
 }
 

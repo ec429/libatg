@@ -137,6 +137,11 @@ int atg_resize_canvas(atg_canvas *canvas, unsigned int w, unsigned int h)
 	}
 	SDL_FreeSurface(canvas->surface);
 	canvas->surface=screen;
+	if(canvas->content)
+	{
+		canvas->content->w=w;
+		canvas->content->h=h;
+	}
 	return(0);
 }
 

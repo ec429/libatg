@@ -21,9 +21,9 @@
 #include <SDL.h>
 
 /* Interface version, in libtool c:r:a format */
-#define ATG_V_LTCURRENT		1
+#define ATG_V_LTCURRENT		2
 #define ATG_V_LTREVISION	0
-#define ATG_V_LTAGE			0
+#define ATG_V_LTAGE			1
 
 #define ATG_BOX_PACK_HORIZONTAL	0
 #define ATG_BOX_PACK_VERTICAL	1

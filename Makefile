@@ -8,7 +8,7 @@ SDLFLAGS := `sdl-config --cflags`
 OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o
 LOBJS := $(OBJS:.o=.lo)
 INCLUDES := atg.h atg_internals.h
-LVERSION := 1:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+LVERSION := 2:0:1 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
 all: libatg.la test widget
 

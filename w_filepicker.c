@@ -178,16 +178,16 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 								size_t n=strlen(l->text);
 								if((l->text[n-1]=='/')&&f->curdir)
 								{
+									size_t m=strlen(f->curdir);
 									if(strcmp(l->text, "../")==0)
 									{
-										size_t m=strlen(f->curdir);
 										f->curdir[m-1]=0;
 										char *s=strrchr(f->curdir, '/');
 										if(s) s[1]=0;
 									}
 									else
 									{
-										snprintf(f->curdir, CWD_BUF_SIZE, "%s%s", f->curdir, l->text);
+										snprintf(f->curdir+m, CWD_BUF_SIZE-m, "%s", l->text);
 									}
 									free(f->value);
 									f->value=NULL;

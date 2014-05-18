@@ -77,12 +77,11 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		free(l->text);
 		l->text=strdup(f->curdir);
 	}
-	if(b->nelems>2&&b->elems[2]&&!strcmp(b->elems[2]->type, "__builtin_box"))
+	if(b->nelems>2&&b->elems[2])
 	{
 		b->elems[2]->h=(e->h>28)?e->h-28:0;
-		atg_free_box_box(b->elems[2]->elemdata);
-		atg_box *b2=b->elems[2]->elemdata=atg_create_box(ATG_BOX_PACK_VERTICAL, b->bgcolour);
-		if(!b2) return(NULL);
+		if(atg_ebox_empty(b->elems[2]))
+			return(NULL);
 		struct dirent **dirs, **files, **stats;
 		filters_dir=f->curdir;
 		int ndirs=scandir(f->curdir, &dirs, filter_dirs, sortfn);
@@ -113,7 +112,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 			snprintf(lbl, l+2, "%s/", dirs[n]->d_name);
 			atg_element *btn=atg_create_element_button(lbl, f->fgcolour, b->bgcolour);
 			if(btn)
-				atg_pack_element(b2, btn);
+				atg_ebox_pack(b->elems[2], btn);
 			free(dirs[n]);
 		}
 		free(dirs);
@@ -122,7 +121,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 			bool sel=f->value&&!strcmp(files[n]->d_name, f->value);
 			atg_element *btn=atg_create_element_button(files[n]->d_name, sel?b->bgcolour:f->fgcolour, sel?f->fgcolour:b->bgcolour);
 			if(btn)
-				atg_pack_element(b2, btn);
+				atg_ebox_pack(b->elems[2], btn);
 			free(files[n]);
 		}
 		free(files);
@@ -133,7 +132,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 			snprintf(lbl, l+3, "! %s", stats[n]->d_name);
 			atg_element *btn=atg_create_element_label(lbl, 14, f->fgcolour);
 			if(btn)
-				atg_pack_element(b2, btn);
+				atg_ebox_pack(b->elems[2], btn);
 			free(stats[n]);
 		}
 		free(stats);

@@ -187,3 +187,23 @@ atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgc
 	rv->free_callback=atg_free_button;
 	return(rv);
 }
+
+atg_element *atg_create_element_button_image(SDL_Surface *img, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=atg_create_element_button_empty(fgcolour, bgcolour);
+	if(!rv)
+		return(NULL);
+	atg_element *i=atg_create_element_image(img);
+	if(!i)
+	{
+		atg_free_element(rv);
+		return(NULL);
+	}
+	if(atg_ebox_pack(rv, i))
+	{
+		atg_free_element(i);
+		atg_free_element(rv);
+		return(NULL);
+	}
+	return(rv);
+}

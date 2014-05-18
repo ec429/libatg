@@ -16,14 +16,7 @@ SDL_Surface *atg_render_spinner(const atg_element *e)
 	if(!e) return(NULL);
 	atg_spinner *s=e->elemdata;
 	if(!s) return(NULL);
-	atg_box *b=s->content;
-	if(!b) return(NULL);
-	if(b->nelems&&b->elems[0]&&!strcmp(b->elems[0]->type, "__builtin_label"))
-	{
-		atg_label *l=b->elems[0]->elemdata;
-		if(l->text)
-			snprintf(l->text, VALUE_LEN, s->fmt, s->value);
-	}
+	snprintf(s->val, VALUE_LEN, s->fmt, s->value);
 	SDL_Surface *content=atg_render_box(&(atg_element){.w=e->w, .h=e->h, .elemdata=s->content, .clickable=false, .userdata=NULL});
 	if(!content) return(NULL);
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, content->w, content->h, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
@@ -140,27 +133,23 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 			free(rv);
 			return(NULL);
 		}
-		char *val=malloc(VALUE_LEN);
-		if(!val)
+		if(!(rv->val=malloc(VALUE_LEN)))
 		{
 			free(rv);
 			return(NULL);
 		}
-		snprintf(val, VALUE_LEN, rv->fmt, rv->value);
-		atg_element *lbl=atg_create_element_label(NULL, 15, fgcolour);
+		snprintf(rv->val, VALUE_LEN, rv->fmt, rv->value);
+		atg_element *lbl=atg_create_element_label_nocopy(rv->val, 15, fgcolour);
 		if(!lbl)
 		{
-			free(val);
+			free(rv->val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
 		}
-		atg_label *l=lbl->elemdata;
-		l->text=val;
 		if(atg_pack_element(rv->content, lbl))
 		{
 			atg_free_element(lbl);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -168,7 +157,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		atg_element *vbox=atg_create_element_box(ATG_BOX_PACK_VERTICAL, bgcolour);
 		if(!vbox)
 		{
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -176,7 +164,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_pack_element(rv->content, vbox))
 		{
 			atg_free_element(vbox);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -184,7 +171,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		atg_element *ubtn=atg_create_element_button_empty(fgcolour, bgcolour);
 		if(!ubtn)
 		{
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -192,7 +178,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_ebox_pack(vbox, ubtn))
 		{
 			atg_free_element(ubtn);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -207,7 +192,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_ebox_pack(ubtn, ulbl))
 		{
 			atg_free_element(ulbl);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -215,7 +199,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		atg_element *dbtn=atg_create_element_button_empty(fgcolour, bgcolour);
 		if(!dbtn)
 		{
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -223,7 +206,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_ebox_pack(vbox, dbtn))
 		{
 			atg_free_element(dbtn);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -238,7 +220,6 @@ atg_spinner *atg_create_spinner(Uint8 flags, int minval, int maxval, int step, i
 		if(atg_ebox_pack(dbtn, dlbl))
 		{
 			atg_free_element(dlbl);
-			free(val);
 			atg_free_box_box(rv->content);
 			free(rv);
 			return(NULL);
@@ -264,6 +245,8 @@ atg_element *atg_copy_spinner(const atg_element *e)
 	*s2=*s;
 	s2->content=s->content?atg_copy_box_box(s->content):NULL;
 	s2->fmt=s->fmt?strdup(s->fmt):NULL;
+	if((s2->val=malloc(VALUE_LEN)))
+		snprintf(s2->val, VALUE_LEN, "%s", s->val);
 	return(rv);
 }
 

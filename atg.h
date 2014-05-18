@@ -107,6 +107,7 @@ typedef struct
 	Uint8 flags; /* for ATG_SPINNER_RIGHTCLICK_STEP10 and ATG_SPINNER_RIGHTCLICK_TIMES2 */
 	int value;
 	char *fmt;
+	char *val;
 	atg_box *content;
 }
 atg_spinner;

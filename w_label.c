@@ -55,16 +55,32 @@ SDL_Surface *atg_render_label(const atg_element *e)
 	return(text);
 }
 
-atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour)
+atg_label *atg_create_label_nocopy(char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_label *rv=malloc(sizeof(atg_label));
 	if(rv)
 	{
-		rv->text=text?strdup(text):NULL;
+		rv->text=text;
 		rv->fontsize=fontsize;
 		rv->colour=colour;
 	}
 	return(rv);
+}
+
+atg_label *atg_create_label(const char *text, unsigned int fontsize, atg_colour colour)
+{
+	if(text)
+	{
+		atg_label *rv=NULL;
+		char *dtext=strdup(text);
+		if(dtext)
+			rv=atg_create_label_nocopy(dtext, fontsize, colour);
+		return(rv);
+	}
+	else
+	{
+		return(atg_create_label_nocopy(NULL, fontsize, colour));
+	}
 }
 
 atg_element *atg_copy_label(const atg_element *e)
@@ -95,11 +111,11 @@ void atg_free_label(atg_element *e)
 	free(label);
 }
 
-atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour)
+atg_element *atg_create_element_label_nocopy(char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));
 	if(!rv) return(NULL);
-	atg_label *l=atg_create_label(text, fontsize, colour);
+	atg_label *l=atg_create_label_nocopy(text, fontsize, colour);
 	if(!l)
 	{
 		free(rv);
@@ -119,4 +135,20 @@ atg_element *atg_create_element_label(const char *text, unsigned int fontsize, a
 	rv->copy_callback=atg_copy_label;
 	rv->free_callback=atg_free_label;
 	return(rv);
+}
+
+atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour)
+{
+	if(text)
+	{
+		atg_element *rv=NULL;
+		char *dtext=strdup(text);
+		if(dtext)
+			rv=atg_create_element_label_nocopy(dtext, fontsize, colour);
+		return(rv);
+	}
+	else
+	{
+		return(atg_create_element_label_nocopy(NULL, fontsize, colour));
+	}
 }

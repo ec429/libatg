@@ -224,6 +224,8 @@ int atg_empty_box(atg_box *box)
 		for(unsigned int e=0;e<box->nelems;e++)
 			atg_free_element(box->elems[e]);
 		free(box->elems);
+		box->nelems=0;
+		box->elems=NULL;
 	}
 	return(0);
 }

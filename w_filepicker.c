@@ -71,12 +71,6 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 	if(!f->curdir) return(NULL);
 	atg_box *b=f->content;
 	if(!b) return(NULL);
-	if(b->nelems>1&&b->elems[1]&&!strcmp(b->elems[1]->type, "__builtin_label"))
-	{
-		atg_label *l=b->elems[1]->elemdata;
-		free(l->text);
-		l->text=strdup(f->curdir);
-	}
 	if(b->nelems>2&&b->elems[2])
 	{
 		b->elems[2]->h=(e->h>28)?e->h-28:0;
@@ -182,24 +176,18 @@ void atg_click_filepicker(struct atg_event_list *list, struct atg_element *eleme
 							if(l&&l->text)
 							{
 								size_t n=strlen(l->text);
-								if(l->text[n-1]=='/')
+								if((l->text[n-1]=='/')&&f->curdir)
 								{
 									if(strcmp(l->text, "../")==0)
 									{
-										if(f->curdir)
-										{
-											size_t m=strlen(f->curdir);
-											f->curdir[m-1]=0;
-											char *s=strrchr(f->curdir, '/');
-											if(s) s[1]=0;
-										}
+										size_t m=strlen(f->curdir);
+										f->curdir[m-1]=0;
+										char *s=strrchr(f->curdir, '/');
+										if(s) s[1]=0;
 									}
 									else
 									{
-										char *newdir=malloc(strlen(f->curdir)+strlen(l->text)+1);
-										sprintf(newdir, "%s%s", f->curdir, l->text);
-										free(f->curdir);
-										f->curdir=newdir;
+										snprintf(f->curdir, CWD_BUF_SIZE, "%s%s", f->curdir, l->text);
 									}
 									free(f->value);
 									f->value=NULL;
@@ -226,49 +214,46 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 	atg_filepicker *rv=malloc(sizeof(atg_filepicker));
 	if(rv)
 	{
-		rv->title=strdup(title?title:NULL);
-		if(dir)
-			rv->curdir=strdup(dir);
-		else
+		rv->title=title?strdup(title):NULL;
+		if(!(rv->curdir=malloc(CWD_BUF_SIZE)))
 		{
-			rv->curdir=malloc(CWD_BUF_SIZE);
-			if(!(rv->curdir&&getcwd(rv->curdir, CWD_BUF_SIZE)))
-			{
-				free(rv->title);
-				free(rv->curdir);
-				free(rv);
-				return(NULL);
-			}
+			free(rv->title);
+			free(rv);
+			return(NULL);
+		}
+		if(dir)
+			snprintf(rv->curdir, CWD_BUF_SIZE, dir);
+		else if(!getcwd(rv->curdir, CWD_BUF_SIZE))
+		{
+			free(rv->curdir);
+			free(rv->title);
+			free(rv);
+			return(NULL);
 		}
 		size_t n=strlen(rv->curdir);
 		while(n&&rv->curdir[n-1]=='/')
 			rv->curdir[--n]=0;
-		char *new=realloc(rv->curdir, n+2);
-		if(!new)
+		if(n+1<CWD_BUF_SIZE)
 		{
-			free(rv->title);
-			free(rv->curdir);
-			free(rv);
-			return(NULL);
+			rv->curdir[n++]='/';
+			rv->curdir[n]=0;
 		}
-		(rv->curdir=new)[n++]='/';
-		rv->curdir[n]=0;
 		rv->value=NULL;
 		rv->fgcolour=fgcolour;
 		rv->content=atg_create_box(ATG_BOX_PACK_VERTICAL, bgcolour);
 		if(!rv->content)
 		{
-			free(rv->title);
 			free(rv->curdir);
+			free(rv->title);
 			free(rv);
 			return(NULL);
 		}
-		atg_element *l_title=atg_create_element_label(title, 12, fgcolour);
+		atg_element *l_title=atg_create_element_label_nocopy(rv->title, 12, fgcolour);
 		if(!l_title)
 		{
 			atg_free_box_box(rv->content);
-			free(rv->title);
 			free(rv->curdir);
+			free(rv->title);
 			free(rv);
 			return(NULL);
 		}
@@ -276,16 +261,14 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		{
 			atg_free_element(l_title);
 			atg_free_box_box(rv->content);
-			free(rv->title);
 			free(rv->curdir);
 			free(rv);
 			return(NULL);
 		}
-		atg_element *l_dir=atg_create_element_label(rv->curdir, 12, fgcolour);
+		atg_element *l_dir=atg_create_element_label_nocopy(rv->curdir, 12, fgcolour);
 		if(!l_dir)
 		{
 			atg_free_box_box(rv->content);
-			free(rv->title);
 			free(rv->curdir);
 			free(rv);
 			return(NULL);
@@ -294,7 +277,6 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		{
 			atg_free_element(l_dir);
 			atg_free_box_box(rv->content);
-			free(rv->title);
 			free(rv->curdir);
 			free(rv);
 			return(NULL);
@@ -303,8 +285,6 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		if(!vbox)
 		{
 			atg_free_box_box(rv->content);
-			free(rv->title);
-			free(rv->curdir);
 			free(rv);
 			return(NULL);
 		}
@@ -312,8 +292,6 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 		{
 			atg_free_element(vbox);
 			atg_free_box_box(rv->content);
-			free(rv->title);
-			free(rv->curdir);
 			free(rv);
 			return(NULL);
 		}
@@ -350,8 +328,6 @@ void atg_free_filepicker(atg_element *e)
 	if(f)
 	{
 		atg_free_box_box(f->content);
-		free(f->title);
-		free(f->curdir);
 		free(f->value);
 	}
 	free(f);

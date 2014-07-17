@@ -15,7 +15,7 @@ test.exe: test.c atg.h libatg.dll
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) test.c $(LDFLAGS) -o test.exe libatg.dll $(SDL)
 
 libatg.dll: $(OBJS)
-	$(CC) -shared -o $@ $(OBJS) $(SDLFLAGS) $(SDL)
+	$(CC) -shared -o $@ $(OBJS) $(SDLFLAGS) $(SDL) -Wl,--subsystem,windows,--out-implib,libatg.dll.a
 
 atg.o: atg.c $(INCLUDES)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<

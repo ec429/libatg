@@ -47,7 +47,7 @@ void atg_click_toggle(struct atg_event_list *list, struct atg_element *element, 
 
 atg_toggle *atg_create_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour)
 {
-	atg_toggle *rv=malloc(sizeof(atg_button));
+	atg_toggle *rv=malloc(sizeof(atg_toggle));
 	if(rv)
 	{
 		rv->fgcolour=fgcolour;

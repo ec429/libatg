@@ -73,6 +73,7 @@ atg_element *atg_create_element_image(SDL_Surface *img)
 		return(NULL);
 	}
 	rv->w=rv->h=0;
+	rv->type="__builtin_image";
 	rv->elemdata=i;
 	rv->clickable=false;
 	rv->hidden=false;

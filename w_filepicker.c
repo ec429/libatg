@@ -222,7 +222,7 @@ atg_filepicker *atg_create_filepicker(const char *title, const char *dir, atg_co
 			return(NULL);
 		}
 		if(dir)
-			snprintf(rv->curdir, CWD_BUF_SIZE, dir);
+			snprintf(rv->curdir, CWD_BUF_SIZE, "%s", dir);
 		else if(!getcwd(rv->curdir, CWD_BUF_SIZE))
 		{
 			free(rv->curdir);

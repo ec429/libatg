@@ -1,8 +1,9 @@
 # Makefile for atg, a tiny gui for SDL
-PREFIX := /usr/local
-MONOFONTPATH := $$(find /usr/share/fonts -name LiberationMono-Regular.ttf -print -quit)
-CC := gcc
-CFLAGS := -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DMONOFONTPATH=\"$(MONOFONTPATH)\"
+PREFIX ?= /usr/local
+FONTSPATH ?= /usr/share/fonts
+MONOFONTPATH != find ${FONTSPATH} -name LiberationMono-Regular.ttf -print -quit
+CC ?= gcc
+CFLAGS += -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DMONOFONTPATH=\"$(MONOFONTPATH)\"
 SDL := `sdl-config --libs` -lSDL_ttf
 SDLFLAGS := `sdl-config --cflags`
 OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o

@@ -11,6 +11,10 @@ LOBJS := $(OBJS:.o=.lo)
 INCLUDES := atg.h atg_internals.h
 LVERSION := 2:1:1 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
+ifeq ($(MONOFONTPATH),)
+$(error Liberation Mono Regular font not found: please install it or provide correct FONTSPATH)
+endif
+
 all: libatg.la test widget
 
 install: libatg.la

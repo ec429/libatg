@@ -17,11 +17,13 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifdef WINDOWS
-#include "scandir.h"
-#define sortfn	alphasort
+#if defined(WINDOWS)
+# include "scandir.h"
+# define sortfn	alphasort
+#elif defined(__linux__)
+# define sortfn	versionsort
 #else
-#define sortfn	versionsort
+# define sortfn	alphasort
 #endif
 
 #define CWD_BUF_SIZE	4096

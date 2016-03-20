@@ -83,6 +83,33 @@ atg_toggle *atg_create_toggle(const char *label, bool state, atg_colour fgcolour
 	return(rv);
 }
 
+atg_toggle *atg_create_toggle_empty(bool state, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_toggle *rv=malloc(sizeof(atg_toggle));
+	if(rv)
+	{
+		rv->fgcolour=fgcolour;
+		rv->bgcolour=bgcolour;
+		rv->content=atg_create_box(ATG_BOX_PACK_HORIZONTAL, state?fgcolour:bgcolour);
+		if(!rv->content)
+		{
+			free(rv);
+			return(NULL);
+		}
+	}
+	rv->state=state;
+	return(rv);
+}
+
+int atg_pack_toggle(atg_element *ebox, atg_element *elem)
+{
+	atg_toggle *toggle=ebox->elemdata;
+	if(!toggle)
+		return(1);
+	atg_box *b=toggle->content;
+		return(atg_pack_element(b, elem));
+}
+
 atg_element *atg_copy_toggle(const atg_element *e)
 {
 	if(!e) return(NULL);
@@ -133,7 +160,33 @@ atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_toggle;
 	rv->match_click_callback=atg_click_toggle;
-	rv->pack_callback=NULL; /* TODO add ability to pack things, also to create_empty */
+	rv->pack_callback=NULL;
+	rv->copy_callback=atg_copy_toggle;
+	rv->free_callback=atg_free_toggle;
+	return(rv);
+}
+
+atg_element *atg_create_element_toggle_empty(bool state, atg_colour fgcolour, atg_colour bgcolour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_toggle *t=atg_create_toggle_empty(state, fgcolour, bgcolour);
+	if(!t)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type="__builtin_toggle";
+	rv->elemdata=t;
+	rv->clickable=false; /* because it generates ATG_EV_TOGGLE events instead */
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_toggle;
+	rv->match_click_callback=atg_click_toggle;
+	rv->pack_callback=atg_pack_toggle;
 	rv->copy_callback=atg_copy_toggle;
 	rv->free_callback=atg_free_toggle;
 	return(rv);

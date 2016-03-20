@@ -9,7 +9,7 @@ SDLFLAGS := `sdl-config --cflags`
 OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o
 LOBJS := $(OBJS:.o=.lo)
 INCLUDES := atg.h atg_internals.h
-LVERSION := 2:1:1 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+LVERSION := 3:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
 ifeq ($(MONOFONTPATH),)
 $(error Liberation Mono Regular font not found: please install it or provide correct FONTSPATH)

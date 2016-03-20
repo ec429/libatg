@@ -101,6 +101,19 @@ atg_toggle *atg_create_toggle_empty(bool state, atg_colour fgcolour, atg_colour 
 	return(rv);
 }
 
+atg_event atg_value_toggle(struct atg_element *e)
+{
+	atg_ev_toggle toggle;
+	toggle.e=e;
+	toggle.button=0;
+	atg_toggle *t=e?e->elemdata:NULL;
+	if(t)
+		toggle.state=t->state;
+	else
+		toggle.state=false;
+	return (atg_event){.type=ATG_EV_TOGGLE, .event.toggle=toggle};
+}
+
 int atg_pack_toggle(atg_element *ebox, atg_element *elem)
 {
 	atg_toggle *toggle=ebox->elemdata;
@@ -160,7 +173,8 @@ atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_toggle;
 	rv->match_click_callback=atg_click_toggle;
-	rv->pack_callback=NULL;
+	rv->value_callback=atg_value_toggle;
+	rv->pack_callback=atg_pack_toggle;
 	rv->copy_callback=atg_copy_toggle;
 	rv->free_callback=atg_free_toggle;
 	return(rv);
@@ -186,6 +200,7 @@ atg_element *atg_create_element_toggle_empty(bool state, atg_colour fgcolour, at
 	rv->userdata=NULL;
 	rv->render_callback=atg_render_toggle;
 	rv->match_click_callback=atg_click_toggle;
+	rv->value_callback=atg_value_toggle;
 	rv->pack_callback=atg_pack_toggle;
 	rv->copy_callback=atg_copy_toggle;
 	rv->free_callback=atg_free_toggle;

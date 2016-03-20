@@ -99,6 +99,17 @@ atg_element *atg_copy_element(const atg_element *e)
 	return(NULL);
 }
 
+int atg_value_event(atg_element *e, struct atg_event *ev)
+{
+	struct atg_event event;
+	if(!e) return(1);
+	if(!e->value_callback) return(1);
+	event=e->value_callback(e);
+	if(ev)
+		*ev=event;
+	return(0);
+}
+
 void atg_free_element(atg_element *element)
 {
 	if(element)

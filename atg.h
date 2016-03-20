@@ -52,12 +52,15 @@ struct atg_event_list
 	struct atg__event_list *list, *last;
 };
 
+struct atg_event;
+
 typedef struct atg_element
 {
 	unsigned int w, h; /* width and height (0 for either means "shrink around contents") */
 	SDL_Rect display; /* co-ordinates within containing box */
 	SDL_Surface *(*render_callback)(const struct atg_element *e);
 	void (*match_click_callback)(struct atg_event_list *list, struct atg_element *element, SDL_MouseButtonEvent button, unsigned int xoff, unsigned int yoff);
+	struct atg_event (*value_callback)(struct atg_element *e); /* Generate an event with your current value, as though you were just changed to it */
 	int (*pack_callback)(struct atg_element *e, struct atg_element *f);
 	struct atg_element *(*copy_callback)(const struct atg_element *e);
 	void (*free_callback)(struct atg_element *e);
@@ -193,7 +196,7 @@ typedef struct
 }
 atg_ev_value;
 
-typedef struct
+typedef struct atg_event
 {
 	atg_event_type type;
 	union {
@@ -232,6 +235,7 @@ int atg_pack_element(atg_box *box, atg_element *elem); /* Old interface, depreca
 int atg_ebox_pack(atg_element *ebox, atg_element *elem);
 int atg_ebox_empty(atg_element *ebox);
 atg_element *atg_copy_element(const atg_element *e);
+int atg_value_event(atg_element *e, struct atg_event *ev);
 
 void atg_free_canvas(atg_canvas *canvas);
 void atg_free_box(atg_element *e);

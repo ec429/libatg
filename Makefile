@@ -1,5 +1,9 @@
 # Makefile for atg, a tiny gui for SDL
+DESTDIR ?=
 PREFIX ?= /usr/local
+INCDIR ?= $(PREFIX)/include
+LIBDIR ?= $(PREFIX)/lib
+
 FONTSPATH ?= /usr/share/fonts
 MONOFONTPATH != find ${FONTSPATH} -name LiberationMono-Regular.ttf -print -quit
 CC ?= gcc
@@ -18,13 +22,13 @@ endif
 all: libatg.la test widget
 
 install: libatg.la
-	libtool --mode=install install -D -m0644 atg.h $(PREFIX)/include/atg.h
-	libtool --mode=install install -D -m0644 atg_internals.h $(PREFIX)/include/atg_internals.h
-	libtool --mode=install install -D -m0644 libatg.la $(PREFIX)/lib/libatg.la
+	libtool --mode=install install -D -m0644 atg.h $(DESTDIR)$(INCDIR)/atg.h
+	libtool --mode=install install -D -m0644 atg_internals.h $(DESTDIR)$(INCDIR)/atg_internals.h
+	libtool --mode=install install -D -m0644 libatg.la $(DESTDIR)$(LIBDIR)/libatg.la
 	-ldconfig
 
 uninstall:
-	libtool --mode=uninstall /bin/rm -f $(PREFIX)/lib/libatg.la $(PREFIX)/include/atg.h $(PREFIX)/include/atg_internals.h
+	libtool --mode=uninstall /bin/rm -f $(DESTDIR)$(LIBDIR)/libatg.la $(DESTDIR)$(INCDIR)/atg.h $(DESTDIR)$(INCDIR)/atg_internals.h
 
 clean:
 	rm -f libatg.la $(LOBJS) test widget
@@ -36,7 +40,7 @@ widget: widget.c libatg.la atg.h atg_internals.h
 	libtool --mode=link $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) widget.c $(LDFLAGS) -o widget -latg $(SDL)
 
 libatg.la: $(LOBJS)
-	libtool --mode=link $(CC) -o $@ $(LOBJS) -rpath $(PREFIX)/lib -version-info $(LVERSION)
+	libtool --mode=link $(CC) -o $@ $(LOBJS) -rpath $(DESTDIR)$(LIBDIR) -version-info $(LVERSION)
 
 atg.lo: atg.c $(INCLUDES)
 	libtool --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS) $(SDLFLAGS) -c $<

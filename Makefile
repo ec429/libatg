@@ -26,8 +26,7 @@ all: libatg.la test widget
 install: libatg.la
 	$(LIBTOOL) --mode=install install -D -m0644 atg.h $(DESTDIR)$(INCDIR)/atg.h
 	$(LIBTOOL) --mode=install install -D -m0644 atg_internals.h $(DESTDIR)$(INCDIR)/atg_internals.h
-	$(LIBTOOL) --mode=install install -D -m0644 libatg.la $(DESTDIR)$(LIBDIR)/libatg.la
-	-ldconfig
+	$(LIBTOOL) --mode=install install -D -m0755 libatg.la $(DESTDIR)$(LIBDIR)/libatg.la
 
 uninstall:
 	$(LIBTOOL) --mode=uninstall /bin/rm -f $(DESTDIR)$(LIBDIR)/libatg.la $(DESTDIR)$(INCDIR)/atg.h $(DESTDIR)$(INCDIR)/atg_internals.h

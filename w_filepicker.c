@@ -93,7 +93,7 @@ SDL_Surface *atg_render_filepicker(const atg_element *e)
 		int nstats=scandir(f->curdir, &stats, filter_stats, sortfn);
 		if(nstats==-1)
 		{
-			while(files--)
+			while(nfiles--)
 				free(files[nfiles]);
 			free(files);
 			while(ndirs--)

@@ -222,6 +222,7 @@ atg_box *atg_create_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_box(Uint8 flags, atg_colour bgcolour);
 atg_element *atg_create_element_label(const char *text, unsigned int fontsize, atg_colour colour);
 atg_element *atg_create_element_label_nocopy(char *text, unsigned int fontsize, atg_colour colour);
+atg_element *atg_create_element_label_refer(char *text, unsigned int fontsize, atg_colour colour);
 atg_element *atg_create_element_image(SDL_Surface *img);
 atg_element *atg_create_element_button(const char *label, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_button_empty(atg_colour fgcolour, atg_colour bgcolour);

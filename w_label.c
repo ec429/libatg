@@ -111,6 +111,39 @@ void atg_free_label(atg_element *e)
 	free(label);
 }
 
+void atg_free_label_refer(atg_element *e)
+{
+	if(!e) return;
+	atg_label *label=e->elemdata;
+	free(label);
+}
+
+atg_element *atg_create_element_label_refer(char *text, unsigned int fontsize, atg_colour colour)
+{
+	atg_element *rv=malloc(sizeof(atg_element));
+	if(!rv) return(NULL);
+	atg_label *l=atg_create_label_nocopy(text, fontsize, colour);
+	if(!l)
+	{
+		free(rv);
+		return(NULL);
+	}
+	rv->w=rv->h=0;
+	rv->type="__builtin_label";
+	rv->elemdata=l;
+	rv->clickable=false;
+	rv->hidden=false;
+	rv->cache=false;
+	rv->cached=NULL;
+	rv->userdata=NULL;
+	rv->render_callback=atg_render_label;
+	rv->match_click_callback=NULL;
+	rv->pack_callback=NULL;
+	rv->copy_callback=atg_copy_label;
+	rv->free_callback=atg_free_label_refer;
+	return(rv);
+}
+
 atg_element *atg_create_element_label_nocopy(char *text, unsigned int fontsize, atg_colour colour)
 {
 	atg_element *rv=malloc(sizeof(atg_element));

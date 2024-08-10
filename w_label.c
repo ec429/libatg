@@ -46,7 +46,7 @@ SDL_Surface *atg_render_label(const atg_element *e)
 			return(NULL);
 	}
 	SDL_Surface *text=TTF_RenderUTF8_Blended(monottf[l->fontsize-1], l->text, (SDL_Color){.r=l->colour.r, .g=l->colour.g, .b=l->colour.b, .unused=l->colour.a});
-	if(e->w||e->h)
+	if(text&&(e->w||e->h))
 	{
 		SDL_Surface *rv=atg_resize_surface(text, e);
 		SDL_FreeSurface(text);

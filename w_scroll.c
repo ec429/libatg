@@ -11,6 +11,7 @@
 #define min(x, y)	((x)<(y)?(x):(y))
 #define max(x, y)	((x)>(y)?(x):(y))
 #define min_t(t, x, y)	((t)(x)<(t)(y)?(t)(x):(t)(y))
+#define max_t(t, x, y)	((t)(x)>(t)(y)?(t)(x):(t)(y))
 #define SCROLL_BAR_WIDTH	6
 
 SDL_Surface *atg_render_scroll(const atg_element *e)
@@ -20,7 +21,7 @@ SDL_Surface *atg_render_scroll(const atg_element *e)
 	if(!s) return(NULL);
 	SDL_Surface *content=atg_render_element(s->content);
 	if(!content) return(NULL);
-	unsigned int w=min_t(unsigned int, e->w, content->w), h=min_t(unsigned int, e->h, content->h);
+	unsigned int w=max_t(unsigned int, e->w, content->w), h=min_t(unsigned int, e->h, content->h);
 	if(!e->w) w=content->w;
 	SDL_Surface *rv=SDL_CreateRGBSurface(SDL_HWSURFACE, w, h, content->format->BitsPerPixel, content->format->Rmask, content->format->Gmask, content->format->Bmask, content->format->Amask);
 	if(!rv)

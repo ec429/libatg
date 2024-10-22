@@ -30,7 +30,7 @@ SDL_Surface *atg_render_scroll(const atg_element *e)
 	}
 	SDL_FillRect(rv, &(SDL_Rect){.x=0, .y=0, .w=rv->w, .h=rv->h}, SDL_MapRGBA(rv->format, s->bgcolour.r, s->bgcolour.g, s->bgcolour.b, s->bgcolour.a));
 	SDL_BlitSurface(content, &(SDL_Rect){.x=0, .y=s->y, .w=rv->w, .h=rv->h}, rv, &(SDL_Rect){.x=0, .y=0});
-	s->content->display=(SDL_Rect){.x=0, .y=-s->y, .w=rv->w, .h=rv->h};
+	s->content->display=(SDL_Rect){.x=0, .y=-s->y, .w=content->w, .h=content->h};
 	s->ch=content->h;
 	SDL_FreeSurface(content);
 	if(e->h<s->ch)

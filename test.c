@@ -61,8 +61,16 @@ int main(int argc, char **argv)
 	if(fp)
 	{
 		fp->cache=true;
-		fp->h=460;
-		if(atg_ebox_pack(mainbox, fp))
+		fp->h=540;
+		atg_element *sb=atg_create_element_scroll(fp, (atg_colour){255, 0, 0, ATG_ALPHA_OPAQUE/4+(3*ATG_ALPHA_TRANSPARENT)/4}, (atg_colour){0, 0, 255, ATG_ALPHA_OPAQUE});
+		if(!sb)
+		{
+			fprintf(stderr, "atg_create_element_scroll failed\n");
+			return(1);
+		}
+		sb->cache=true;
+		sb->h=460;
+		if(atg_ebox_pack(mainbox, sb))
 		{
 			perror("atg_ebox_pack");
 			return(1);

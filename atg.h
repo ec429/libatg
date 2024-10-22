@@ -140,6 +140,14 @@ atg_filepicker;
 
 typedef struct
 {
+	atg_element *content;
+	atg_colour fgcolour, bgcolour;
+	unsigned int y, ch;
+}
+atg_scroll;
+
+typedef struct
+{
 	SDL_Surface *surface;
 	atg_element *content;
 	Uint32 flags;
@@ -231,6 +239,7 @@ atg_element *atg_create_element_spinner(Uint8 flags, int minval, int maxval, int
 atg_element *atg_create_element_toggle(const char *label, bool state, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_toggle_empty(bool state, atg_colour fgcolour, atg_colour bgcolour);
 atg_element *atg_create_element_filepicker(const char *title, const char *dir, atg_colour fgcolour, atg_colour bgcolour);
+atg_element *atg_create_element_scroll(atg_element *content, atg_colour fgcolour, atg_colour bgcolour);
 
 int atg_pack_element(atg_box *box, atg_element *elem); /* Old interface, deprecated */
 int atg_ebox_pack(atg_element *ebox, atg_element *elem);

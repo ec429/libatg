@@ -61,10 +61,10 @@ void atg__match_click_recursive(struct atg_event_list *list, atg_element *elemen
 	if(!element) return;
 	if(element->hidden) return;
 	if(
-		(button.x>=element->display.x+xoff)
-		&&(button.x<element->display.x+xoff+element->display.w)
-		&&(button.y>=element->display.y+yoff)
-		&&(button.y<element->display.y+yoff+element->display.h)
+		(button.x>=(int)(element->display.x+xoff))
+		&&(button.x<(int)(element->display.x+xoff+element->display.w))
+		&&(button.y>=(int)(element->display.y+yoff))
+		&&(button.y<(int)(element->display.y+yoff+element->display.h))
 	)
 	{
 		if(element->cached) // Catching clicks clears cache.  It's only prudent

@@ -12,7 +12,7 @@ CFLAGS += -Wall -Wextra -Werror -pedantic --std=gnu99 -g -DMONOFONTPATH=\"$(MONO
 LIBTOOL = libtool --tag=CC
 SDL := `sdl-config --libs` -lSDL_ttf
 SDLFLAGS := `sdl-config --cflags`
-OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o
+OBJS := atg.o plumbing.o w_box.o w_label.o w_image.o w_button.o w_spinner.o w_toggle.o w_filepicker.o w_scroll.o
 LOBJS := $(OBJS:.o=.lo)
 INCLUDES := atg.h atg_internals.h
 LVERSION := 3:0:0 # rules: http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
